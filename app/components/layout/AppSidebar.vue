@@ -15,17 +15,17 @@ const teams: {
   plan: string
 }[] = [
   {
-    name: 'OTOBIX ADMIN',
+    name: 'DEVCO Super Admin',
     logo: 'i-lucide-gallery-vertical-end',
     plan: 'Workspace',
   },
   {
-    name: 'OTOBIX INSPECTION',
+    name: 'DEVCO Admin',
     logo: 'i-lucide-audio-waveform',
     plan: 'Workspace',
   },
   {
-    name: 'OTOBIX DEALERS',
+    name: 'DEVCO Employee',
     logo: 'i-lucide-command',
     plan: 'Workspace',
   },

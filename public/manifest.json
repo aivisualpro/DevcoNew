@@ -1,7 +1,7 @@
 {
-  "name": "OTOBIX CRM",
-  "short_name": "OTOBIX",
-  "description": "A comprehensive CRM platform by OTOBIX for car dealership management.",
+  "name": "DEVCO ERP",
+  "short_name": "DEVCO",
+  "description": "A comprehensive ERP platform by DEVCO.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

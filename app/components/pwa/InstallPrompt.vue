@@ -98,7 +98,7 @@ function handleDismiss() {
             <!-- Content -->
             <div class="flex-1 min-w-0">
               <h3 class="text-sm font-semibold text-foreground">
-                Install OTOBIX CRM
+                Install DEVCO ERP
               </h3>
               <p class="mt-0.5 text-xs text-muted-foreground leading-relaxed">
                 Add to your home screen for a faster, app-like experience with offline access.

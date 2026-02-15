@@ -10,14 +10,19 @@ export const navMenu: NavMenu[] = [
         link: '/',
       },
       {
-        title: 'Leads',
-        icon: 'i-lucide-magnet',
-        link: '/leads',
+        title: 'Upcoming Jobs',
+        icon: 'i-lucide-calendar-days',
+        link: '/upcoming-jobs',
       },
       {
-        title: 'People',
-        icon: 'i-lucide-users',
-        link: '/people/otobix',
+        title: 'Employees',
+        icon: 'i-lucide-user-round-check',
+        link: '/employees/super-admin',
+      },
+      {
+        title: 'Clients',
+        icon: 'i-lucide-building-2',
+        link: '/clients',
       },
       {
         title: 'Auctions',

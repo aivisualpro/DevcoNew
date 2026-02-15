@@ -21,8 +21,8 @@ export interface PeopleRouteFilter {
 }
 
 export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
-  otobix: {
-    label: 'Otobix',
+  devco: {
+    label: 'Devco',
     filterFn: (user: any) => user.isStaff === true,
     showStatusCounts: false,
   },

@@ -8,12 +8,12 @@
         <div class="flex flex-col h-full overflow-hidden">
           <div class="shrink-0 p-4 border-b bg-background/50 backdrop-blur-sm">
             <h3 class="font-semibold flex items-center gap-2 text-primary">
-              <Icon name="i-lucide-users" class="size-4" />
-              People
+              <Icon name="i-lucide-calendar-days" class="size-4" />
+              Upcoming Jobs
             </h3>
           </div>
           <ScrollArea class="flex-1 min-h-0">
-            <PeopleNav />
+            <UpcomingJobsNav />
           </ScrollArea>
         </div>
       </ResizablePanel>

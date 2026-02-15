@@ -5,16 +5,19 @@ definePageMeta({
 </script>
 
 <template>
-  <LayoutAuth reverse video="/loginVideo3.mp4">
-    <div class="grid mx-auto max-w-sm gap-6">
-      <div class="flex flex-col items-center gap-6 text-center">
-        <img src="/mainlogo.png" alt="OTOBIX Logo" class="h-28 w-auto object-contain" />
-        <div class="grid gap-2">
-          <h1 class="text-3xl font-bold tracking-tight text-primary">
-            Welcome to OTOBIX
+  <LayoutAuth>
+    <div class="grid mx-auto max-w-sm gap-8">
+      <!-- Logo + Welcome -->
+      <div class="flex flex-col items-center gap-5 text-center">
+        <div class="h-20 w-20 rounded-full overflow-hidden shadow-lg ring-2 ring-primary/10">
+          <img src="/devco-logo.png" alt="DEVCO" class="h-full w-full object-cover" />
+        </div>
+        <div class="grid gap-1.5">
+          <h1 class="text-2xl font-bold tracking-tight text-foreground">
+            Welcome Back
           </h1>
-          <p class="text-sm text-muted-foreground leading-relaxed px-4">
-            At OTOBIX, we're dedicated to transforming the used car buying and selling experience. Our mission is simple: to connect buyers and sellers seamlessly, providing the resources you need to make informed decisions.
+          <p class="text-sm text-muted-foreground leading-relaxed">
+            Sign in to your DEVCO ERP account
           </p>
         </div>
       </div>

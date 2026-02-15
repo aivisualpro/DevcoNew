@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  <LeadsLayout>
+  <UpcomingJobsLayout>
     <NuxtPage />
-  </LeadsLayout>
+  </UpcomingJobsLayout>
 </template>

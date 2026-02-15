@@ -1,5 +1,5 @@
-// OTOBIX CRM Service Worker
-const CACHE_NAME = 'otobix-crm-v1'
+// DEVCO CRM Service Worker
+const CACHE_NAME = 'devco-crm-v1'
 const OFFLINE_URL = '/login'
 
 // Assets to pre-cache on install

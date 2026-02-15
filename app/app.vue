@@ -10,19 +10,19 @@ const { theme } = useAppSettings()
 
 useHead({
   titleTemplate: (titleChunk) => {
-    return titleChunk ? `${titleChunk} | OTOBIX CRM` : 'OTOBIX CRM'
+    return titleChunk ? `${titleChunk} | DEVCOERP` : 'DEVCOERP'
   },
   meta: [
     { charset: 'utf-8' },
     { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
     { key: 'theme-color', name: 'theme-color', content: color },
-    { name: 'description', content: 'A comprehensive CRM platform by OTOBIX for car dealership management.' },
+    { name: 'description', content: 'DEVCOERP.' },
     // PWA meta tags
     { name: 'mobile-web-app-capable', content: 'yes' },
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
     { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-    { name: 'apple-mobile-web-app-title', content: 'OTOBIX CRM' },
-    { name: 'application-name', content: 'OTOBIX CRM' },
+    { name: 'apple-mobile-web-app-title', content: 'DEVCOERP' },
+    { name: 'application-name', content: 'DEVCOERP' },
     { name: 'msapplication-TileColor', content: '#E31E24' },
   ],
   link: [
@@ -39,8 +39,8 @@ useHead({
   },
 })
 
-const title = 'OTOBIX CRM'
-const description = 'A comprehensive CRM platform by OTOBIX.'
+const title = 'DEVCOERP'
+const description = 'A comprehensive CRM platform by DEVCOERP.'
 
 const router = useRouter()
 

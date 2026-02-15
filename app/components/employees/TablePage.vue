@@ -12,7 +12,7 @@ const props = defineProps<{
   showStatusCounts?: boolean
 }>()
 
-const entity = computed(() => props.entityName || 'Person')
+const entity = computed(() => props.entityName || 'Employee')
 
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, description: props.description, icon: props.icon })
@@ -25,6 +25,8 @@ const {
   fetchError,
   fetchAllUsers,
   refreshUsers,
+  isSyncing,
+  syncResult,
 } = usePeopleApi()
 
 // Fetch users once
@@ -84,14 +86,18 @@ const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFil
 
 // ─── Formatters ───
 const badgeClasses: Record<string, string> = {
+  // Status values
+  'Active': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  'Inactive': 'bg-red-500/10 text-red-600 border-red-500/20',
   'Approved': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   'Pending': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Rejected': 'bg-red-500/10 text-red-600 border-red-500/20',
+  // Role values
+  'Super Admin': 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+  'Admin': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  'Employee': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   'Dealer': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Customer': 'bg-violet-500/10 text-violet-600 border-violet-500/20',
-  'Admin': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  'Super Admin': 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
-  'Staff': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
 }
 
 function getBadgeClass(value: string): string {
@@ -113,7 +119,19 @@ function getInitials(name: string): string {
 
 async function handleRefresh() {
   await refreshUsers()
-  toast.success('Data refreshed from server')
+
+  // Show sync result
+  if (syncResult.value?.success && syncResult.value.stats) {
+    const s = syncResult.value.stats
+    const dur = (s.duration / 1000).toFixed(1)
+    toast.success(`Synced ${s.total} employees — ${s.created} new, ${s.updated} updated, ${s.removed} removed in ${dur}s`)
+  }
+  else if (syncResult.value && !syncResult.value.success) {
+    toast.error(`Sync failed: ${syncResult.value.message}`)
+  }
+  else {
+    toast.success('Data refreshed from server')
+  }
 }
 
 // ─── Pagination page numbers with ellipsis ───
@@ -155,14 +173,14 @@ const pageNumbers = computed(() => {
       <Separator v-if="showStatusCounts && isFetched" orientation="vertical" class="h-5 hidden sm:block" />
       <div class="relative">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input v-model="search" placeholder="Search people..." class="pl-8 h-8 w-48 text-sm" />
+        <Input v-model="search" placeholder="Search employees..." class="pl-8 h-8 w-48 text-sm" />
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
       </p>
-      <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
-        <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
-        Refresh
+      <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading || isSyncing" @click="handleRefresh">
+        <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading || isSyncing }" />
+        {{ isSyncing ? 'Syncing...' : 'Refresh' }}
       </Button>
     </Teleport>
   </ClientOnly>
@@ -173,7 +191,7 @@ const pageNumbers = computed(() => {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load users</p>
+        <p class="text-sm font-medium text-destructive">Failed to load employees</p>
         <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
       </div>
       <Button variant="outline" size="sm" @click="handleRefresh">
@@ -185,7 +203,7 @@ const pageNumbers = computed(() => {
     <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">Loading users...</p>
+        <p class="text-sm">Loading employees...</p>
       </div>
     </div>
 

@@ -55,7 +55,7 @@ const _isFetched = ref(false)
 const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
 
-export function useLeadsApi() {
+export function useUpcomingJobsApi() {
   const config = useRuntimeConfig()
   const authToken = useCookie('authToken')
 

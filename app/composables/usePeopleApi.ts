@@ -33,11 +33,16 @@ const _isFetched = ref(false)
 const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
 
-export function usePeopleApi() {
-  const config = useRuntimeConfig()
-  const authToken = useCookie('authToken')
+// ─── Sync state ───
+const _isSyncing = ref(false)
+const _syncResult = ref<{
+  success: boolean
+  message: string
+  stats?: { total: number, created: number, updated: number, removed: number, duration: number }
+} | null>(null)
 
-  /** Fetch all users from the API (runs only once, cached globally) */
+export function usePeopleApi() {
+  /** Fetch all employees from Firebase via our server API */
   async function fetchAllUsers(force = false) {
     if (_isFetched.value && !force) return
     if (_isFetching.value && !force) return
@@ -46,15 +51,9 @@ export function usePeopleApi() {
     _fetchError.value = null
 
     try {
-      const response = await $fetch<any>(
-        `${config.public.apiBaseUrl}user/all-users-list`,
-        {
-          method: 'GET',
-          headers: {
-            ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
-          },
-        },
-      )
+      const response = await $fetch<any>('/api/employees', {
+        method: 'GET',
+      })
 
       // Extract users array from response
       const usersArray = Array.isArray(response)
@@ -70,7 +69,7 @@ export function usePeopleApi() {
       _isFetched.value = true
     }
     catch (err: any) {
-      _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch users'
+      _fetchError.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Failed to fetch employees'
       _allUsers.value = []
     }
     finally {
@@ -78,8 +77,37 @@ export function usePeopleApi() {
     }
   }
 
-  /** Force re-fetch */
+  /** Sync employees from MongoDB → Firebase via server API */
+  async function syncToFirebase(): Promise<typeof _syncResult.value> {
+    _isSyncing.value = true
+    _syncResult.value = null
+
+    try {
+      const result = await $fetch<any>('/api/employees/sync', {
+        method: 'POST',
+      })
+
+      _syncResult.value = result
+      return result
+    }
+    catch (err: any) {
+      const errorResult = {
+        success: false,
+        message: err?.data?.data?.message || err?.message || 'Sync failed',
+      }
+      _syncResult.value = errorResult
+      return errorResult
+    }
+    finally {
+      _isSyncing.value = false
+    }
+  }
+
+  /** Force re-fetch + sync to Firebase */
   async function refreshUsers() {
+    // 1. Sync MongoDB → Firebase
+    await syncToFirebase()
+    // 2. Re-fetch the latest data for display
     await fetchAllUsers(true)
   }
 
@@ -88,7 +116,11 @@ export function usePeopleApi() {
     isLoading: _isFetching,
     isFetched: _isFetched,
     fetchError: _fetchError,
+    isSyncing: _isSyncing,
+    syncResult: _syncResult,
     fetchAllUsers,
     refreshUsers,
+    syncToFirebase,
   }
 }
+

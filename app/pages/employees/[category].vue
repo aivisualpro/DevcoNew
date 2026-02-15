@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { peopleColumns, peopleRouteFilters } from '~/constants/people'
+import { employeeColumns, employeeRouteFilters } from '~/constants/employees'
 
 const route = useRoute()
 const categoryKey = computed(() => route.params.category as string)
-const filter = computed(() => peopleRouteFilters[categoryKey.value])
+const filter = computed(() => employeeRouteFilters[categoryKey.value])
 </script>
 
 <template>
-  <PeopleTablePage
+  <EmployeesTablePage
     v-if="filter"
     :title="filter.label"
     :description="`Viewing ${filter.label} users`"
-    icon="i-lucide-users"
-    entity-name="Person"
-    :columns="peopleColumns"
+    icon="i-lucide-user-round-check"
+    entity-name="Employee"
+    :columns="employeeColumns"
     :filter-fn="filter.filterFn"
     :show-status-counts="filter.showStatusCounts"
   />

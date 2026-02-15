@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  <PeopleLayout>
+  <EmployeesLayout>
     <NuxtPage />
-  </PeopleLayout>
+  </EmployeesLayout>
 </template>
