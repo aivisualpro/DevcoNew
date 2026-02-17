@@ -1,0 +1,30 @@
+<script setup lang="ts">
+const props = defineProps<{
+  estimate: any
+  isLoading: boolean
+}>()
+
+const { setHeader } = usePageHeader()
+
+watchEffect(() => {
+  if (props.estimate) {
+    setHeader({
+      title: `${props.estimate.estimate || 'Estimate'} — Schedules`,
+      description: props.estimate.projectName || '',
+      icon: 'i-lucide-calendar-days',
+    })
+  }
+})
+</script>
+
+<template>
+  <div class="p-6">
+    <div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
+      <div class="size-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-4">
+        <Icon name="i-lucide-calendar-days" class="size-8 text-violet-500" />
+      </div>
+      <p class="text-sm font-semibold text-foreground">Schedules</p>
+      <p class="text-xs mt-1">Schedule management for this estimate coming soon.</p>
+    </div>
+  </div>
+</template>

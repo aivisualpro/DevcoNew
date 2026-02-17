@@ -28,6 +28,17 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
     <div class="flex items-center gap-4 min-w-0">
       <SidebarTrigger />
       <Separator orientation="vertical" class="h-4" />
+      <ClientOnly>
+        <NuxtLink
+          v-if="headerState.backLink"
+          :to="headerState.backLink.href"
+          class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        >
+          <Icon name="i-lucide-arrow-left" class="size-3.5" />
+          {{ headerState.backLink.label }}
+        </NuxtLink>
+        <Separator v-if="headerState.backLink" orientation="vertical" class="h-4" />
+      </ClientOnly>
       <div class="flex items-center gap-2.5 min-w-0">
         <ClientOnly>
           <Icon v-if="headerState.icon" :name="headerState.icon" class="size-5 shrink-0 text-primary" />

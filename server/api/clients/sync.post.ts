@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { ObjectId } from 'mongodb'
+import { useMongoClient } from '../../utils/mongodb'
 
 /**
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
@@ -25,8 +26,8 @@ function sanitizeForFirestore(value: any): any {
 /**
  * POST /api/clients/sync
  *
- * Syncs all clients from MongoDB → Firebase Firestore.
- * Also counts projects (estimates) per client via customerId.
+ * Syncs specific client fields from MongoDB → Firebase Firestore (devcoClients).
+ * Uses Firebase auto-generated IDs and stores MongoDB _id as legacy_id.
  */
 export default defineEventHandler(async () => {
   const startTime = Date.now()
@@ -47,26 +48,20 @@ export default defineEventHandler(async () => {
       }
     }
 
-    // Count projects per client (via estimatesdb.customerId)
-    const projectCounts = await db.collection('estimatesdb').aggregate([
-      { $match: { customerId: { $ne: null, $exists: true } } },
-      { $group: { _id: '$customerId', projectCount: { $sum: 1 } } },
-    ]).toArray()
-
-    const projectCountMap = new Map<string, number>()
-    for (const pc of projectCounts) {
-      projectCountMap.set(String(pc._id), pc.projectCount)
-    }
-
     // ── Step 2: Get Firestore reference ──
     const firestore = useFirestoreAdmin()
-    const firestoreCollection = firestore.collection('clients')
+    const firestoreCollection = firestore.collection('devcoClients')
 
-    // ── Step 3: Get existing Firestore doc IDs ──
-    let existingIds = new Set<string>()
+    // ── Step 3: Get existing Firestore doc IDs mapped by legacy_id ──
+    const legacyIdToDocId = new Map<string, string>()
     try {
-      const existingSnapshot = await firestoreCollection.select().get()
-      existingIds = new Set(existingSnapshot.docs.map(d => d.id))
+      const existingSnapshot = await firestoreCollection.select('legacy_id').get()
+      for (const doc of existingSnapshot.docs) {
+        const data = doc.data()
+        if (data.legacy_id) {
+            legacyIdToDocId.set(data.legacy_id, doc.id)
+        }
+      }
     }
     catch {
       // Collection doesn't exist on first sync
@@ -76,45 +71,61 @@ export default defineEventHandler(async () => {
     const BATCH_SIZE = 450
     let created = 0
     let updated = 0
-    const mongoIds = new Set<string>()
+    let removed = 0
+    const processedLegacyIds = new Set<string>()
 
     for (let i = 0; i < mongoClients.length; i += BATCH_SIZE) {
       const batch = firestore.batch()
       const chunk = mongoClients.slice(i, i + BATCH_SIZE)
 
       for (const client of chunk) {
-        const docId = client._id.toString()
-        mongoIds.add(docId)
+        const legacyId = client._id.toString()
+        processedLegacyIds.add(legacyId)
 
-        const docRef = firestoreCollection.doc(docId)
-        const sanitized = sanitizeForFirestore(client)
-        delete sanitized._id
-
-        // Add project count and sync metadata
-        sanitized.projectCount = projectCountMap.get(docId) || 0
-        sanitized._syncedAt = FieldValue.serverTimestamp()
-        sanitized._sourceId = docId
-
-        if (existingIds.has(docId)) {
-          updated++
+        // Determine Doc ID: Use existing if found, else auto-generate
+        let docRef
+        const existingDocId = legacyIdToDocId.get(legacyId)
+        
+        if (existingDocId) {
+            docRef = firestoreCollection.doc(existingDocId)
+            updated++
+        } else {
+            docRef = firestoreCollection.doc()
+            created++
         }
-        else {
-          created++
+        
+        // Construct the payload with specific fields as requested
+        const payload = {
+          legacy_id: legacyId,
+          addresses: sanitizeForFirestore(client.addresses) || [],
+          contacts: sanitizeForFirestore(client.contacts) || [],
+          createdAt: sanitizeForFirestore(client.createdAt),
+          documents: sanitizeForFirestore(client.documents) || [],
+          name: client.name || '',
+          status: client.status || 'Active', // Default to Active/unknown if missing
+          updatedAt: sanitizeForFirestore(client.updatedAt),
+          _syncedAt: FieldValue.serverTimestamp(),
         }
 
-        batch.set(docRef, sanitized, { merge: true })
+        batch.set(docRef, payload, { merge: true })
       }
 
       await batch.commit()
     }
 
     // ── Step 5: Remove orphaned docs ──
-    let removed = 0
-    const orphanedIds = [...existingIds].filter(id => !mongoIds.has(id))
-    if (orphanedIds.length > 0) {
-      for (let i = 0; i < orphanedIds.length; i += BATCH_SIZE) {
+    // Identify docs in Firestore whose legacy_id is no longer in MongoDB
+    const orphanedDocIds: string[] = []
+    for (const [legacyId, docId] of legacyIdToDocId) {
+        if (!processedLegacyIds.has(legacyId)) {
+            orphanedDocIds.push(docId)
+        }
+    }
+
+    if (orphanedDocIds.length > 0) {
+      for (let i = 0; i < orphanedDocIds.length; i += BATCH_SIZE) {
         const batch = firestore.batch()
-        const chunk = orphanedIds.slice(i, i + BATCH_SIZE)
+        const chunk = orphanedDocIds.slice(i, i + BATCH_SIZE)
         for (const id of chunk) {
           batch.delete(firestoreCollection.doc(id))
           removed++
@@ -126,7 +137,7 @@ export default defineEventHandler(async () => {
     const duration = Date.now() - startTime
     return {
       success: true,
-      message: `Synced ${mongoClients.length} clients to Firebase`,
+      message: `Synced ${mongoClients.length} clients to Firebase (devcoClients)`,
       stats: { total: mongoClients.length, created, updated, removed, duration },
     }
   }

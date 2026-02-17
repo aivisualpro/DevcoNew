@@ -221,13 +221,14 @@ const pageNumbers = computed(() => {
           <TableRow
             v-for="item in paginatedItems"
             :key="item.id || item._id"
-            class="group"
+            class="group cursor-pointer hover:bg-muted/50"
+            @click="navigateTo(`/employees/detail/${item.id || item._id}`)"
           >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Avatar -->
               <div v-if="col.type === 'avatar'" class="flex items-center gap-3">
                 <Avatar class="size-8 border">
-                  <AvatarImage :src="item.image" :alt="item[col.key]" />
+                  <AvatarImage :src="item.profilePicture || item.image" :alt="item[col.key]" />
                   <AvatarFallback class="text-xs">
                     {{ getInitials(item[col.key]) }}
                   </AvatarFallback>

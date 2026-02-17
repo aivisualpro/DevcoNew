@@ -8,7 +8,7 @@
 export default defineEventHandler(async () => {
   try {
     const firestore = useFirestoreAdmin()
-    const snapshot = await firestore.collection('employees').get()
+    const snapshot = await firestore.collection('devcoEmployees').get()
 
     const employees = snapshot.docs.map((doc) => {
       const data = doc.data()

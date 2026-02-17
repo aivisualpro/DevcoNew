@@ -64,6 +64,7 @@ export function usePeopleApi() {
       _allUsers.value = usersArray.map((item: any) => ({
         ...item,
         id: item._id || item.id,
+        fullName: `${item.firstName || ''} ${item.lastName || ''}`.trim(),
       }))
 
       _isFetched.value = true

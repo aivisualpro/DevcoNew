@@ -1,14 +1,40 @@
+import { readFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
+
+// Manually load .env.local because dotenv install is flaky
+const envPath = join(process.cwd(), '.env.local')
+if (existsSync(envPath)) {
+  const envContent = readFileSync(envPath, 'utf-8')
+  envContent.split('\n').forEach(line => {
+    const match = line.match(/^([^=]+)=(.*)$/)
+    if (match && match[1]) {
+      const key = match[1].trim()
+      let value = match[2] ? match[2].trim() : ''
+      if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1)
+      process.env[key] = value
+    }
+  })
+}
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: false },
   spaLoadingTemplate: false,
+
+  app: {
+    head: {
+      title: 'DEVCO ERP',
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/devco-logo.png' },
+      ],
+    },
+  },
+
   devServer: { loadingTemplate: () => '' },
 
   runtimeConfig: {
-    public: {
-      apiBaseUrl: process.env.BASE_URL_PRODUCTION || 'https://ob-dealerapp-kong.onrender.com/api/',
-    },
+    mongodbUri: process.env.MONGODB_URI || '',
   },
 
   watch: ['~/app.config.ts'],

@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 
     // Query for employee by email (case-insensitive)
     const snapshot = await firestore
-      .collection('employees')
+      .collection('devcoEmployees')
       .where('email', '==', email.toLowerCase().trim())
       .limit(1)
       .get()

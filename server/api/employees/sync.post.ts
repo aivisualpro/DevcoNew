@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { ObjectId } from 'mongodb'
+import { useMongoClient } from '../../utils/mongodb'
 
 /**
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
@@ -51,16 +52,18 @@ function sanitizeForFirestore(value: any): any {
 /**
  * POST /api/employees/sync
  *
- * Reads ALL employees from MongoDB → upserts each into Firestore.
- * Uses MongoDB _id as the Firestore document ID so duplicates are impossible.
+ * Reads ALL employees from MongoDB → upserts each into Firestore `devcoEmployees` collection.
+ * Uses Firebase auto-generated document IDs (not MongoDB _id).
+ * Stores MongoDB _id as `legacy_id` to prevent duplicate syncs.
  *
  * Strategy:
- *   1. Fetch all docs from MongoDB `employees` collection
- *   2. For each doc, use Firestore `set(data, { merge: true })` keyed by _id
- *      - If doc exists → updates changed fields only
- *      - If doc doesn't exist → creates it
- *   3. Optionally remove Firestore docs that no longer exist in MongoDB
- *   4. Return sync stats
+ *   1. Fetch all docs from MongoDB `devcoEmployees` collection
+ *   2. Build a lookup map of existing Firestore docs keyed by `legacy_id`
+ *   3. For each MongoDB doc:
+ *      - If a Firestore doc with matching `legacy_id` exists → update it
+ *      - Otherwise → create a new doc with Firebase's auto-generated ID
+ *   4. Remove orphaned Firestore docs whose `legacy_id` no longer exists in MongoDB
+ *   5. Return sync stats
  */
 export default defineEventHandler(async (event) => {
   const startTime = Date.now()
@@ -81,70 +84,85 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // ── Step 2: Get Firestore reference ──
+    // ── Step 2: Get Firestore reference and build legacy_id → docId lookup ──
     const firestore = useFirestoreAdmin()
-    const firestoreCollection = firestore.collection('employees')
+    const firestoreCollection = firestore.collection('devcoEmployees')
 
-    // ── Step 3: Get existing Firestore doc IDs for cleanup comparison ──
-    let existingIds = new Set<string>()
+    // Build a map of legacy_id → Firestore doc ID from existing docs
+    const legacyIdToDocId = new Map<string, string>()
     try {
-      const existingSnapshot = await firestoreCollection.select().get()
-      existingIds = new Set(existingSnapshot.docs.map(d => d.id))
+      const existingSnapshot = await firestoreCollection.select('legacy_id').get()
+      for (const doc of existingSnapshot.docs) {
+        const legacyId = doc.data().legacy_id
+        if (legacyId) {
+          legacyIdToDocId.set(legacyId, doc.id)
+        }
+      }
     }
     catch {
       // Collection doesn't exist yet on first sync — that's fine
     }
 
-    // ── Step 4: Batch upsert (Firestore batches max 500 ops) ──
+    // ── Step 3: Batch upsert (Firestore batches max 500 ops) ──
     const BATCH_SIZE = 450 // leave headroom
     let created = 0
     let updated = 0
-    const mongoIds = new Set<string>()
+    const processedLegacyIds = new Set<string>()
 
     for (let i = 0; i < mongoEmployees.length; i += BATCH_SIZE) {
       const batch = firestore.batch()
       const chunk = mongoEmployees.slice(i, i + BATCH_SIZE)
 
       for (const emp of chunk) {
-        const docId = emp._id.toString()
-        mongoIds.add(docId)
-
-        const docRef = firestoreCollection.doc(docId)
+        const legacyId = emp._id.toString()
+        processedLegacyIds.add(legacyId)
 
         // Deep-sanitize the entire document for Firestore
         const sanitized = sanitizeForFirestore(emp)
-        // Remove _id since it's already the doc key
+        // Remove MongoDB _id — we store it as legacy_id instead
         delete sanitized._id
 
-        // Add sync metadata
+        // Add legacy_id and sync metadata
+        sanitized.legacy_id = legacyId
         sanitized._syncedAt = FieldValue.serverTimestamp()
-        sanitized._sourceId = docId
 
-        if (existingIds.has(docId)) {
+        // Check if a Firestore doc already exists for this MongoDB record
+        const existingDocId = legacyIdToDocId.get(legacyId)
+
+        if (existingDocId) {
+          // Update existing doc
+          const docRef = firestoreCollection.doc(existingDocId)
+          batch.set(docRef, sanitized, { merge: true })
           updated++
         }
         else {
+          // Create new doc with Firebase auto-generated ID
+          const docRef = firestoreCollection.doc()
+          batch.set(docRef, sanitized)
           created++
         }
-
-        // merge: true → updates existing fields, adds new ones, keeps untouched fields
-        batch.set(docRef, sanitized, { merge: true })
       }
 
       await batch.commit()
     }
 
-    // ── Step 5: Remove orphaned Firestore docs (exist in Firebase but not in MongoDB) ──
+    // ── Step 4: Remove orphaned Firestore docs (legacy_id no longer in MongoDB) ──
     let removed = 0
-    const orphanedIds = [...existingIds].filter(id => !mongoIds.has(id))
+    const orphanedDocIds: string[] = []
 
-    if (orphanedIds.length > 0) {
-      for (let i = 0; i < orphanedIds.length; i += BATCH_SIZE) {
+    for (const [legacyId, docId] of legacyIdToDocId) {
+      if (!processedLegacyIds.has(legacyId)) {
+        orphanedDocIds.push(docId)
+      }
+    }
+
+    if (orphanedDocIds.length > 0) {
+      for (let i = 0; i < orphanedDocIds.length; i += BATCH_SIZE) {
         const batch = firestore.batch()
-        const chunk = orphanedIds.slice(i, i + BATCH_SIZE)
+        const chunk = orphanedDocIds.slice(i, i + BATCH_SIZE)
 
-        for (const orphanId of chunk) {
-          batch.delete(firestoreCollection.doc(orphanId))
+        for (const orphanDocId of chunk) {
+          batch.delete(firestoreCollection.doc(orphanDocId))
           removed++
         }
 

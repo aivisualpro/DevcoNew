@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid'
 export interface CrudColumn {
   key: string
   label: string
-  type?: 'text' | 'badge' | 'avatar' | 'currency' | 'date' | 'progress' | 'email' | 'number' | 'tags'
+  type?: 'text' | 'badge' | 'avatar' | 'currency' | 'date' | 'progress' | 'email' | 'number' | 'tags' | 'avatar-only' | 'boolean' | 'percent'
 }
 
 export interface CrudFormField {

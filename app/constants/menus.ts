@@ -10,9 +10,9 @@ export const navMenu: NavMenu[] = [
         link: '/',
       },
       {
-        title: 'Upcoming Jobs',
+        title: 'Scheduled Jobs',
         icon: 'i-lucide-calendar-days',
-        link: '/upcoming-jobs',
+        link: '/scheduled-jobs',
       },
       {
         title: 'Employees',
@@ -25,14 +25,84 @@ export const navMenu: NavMenu[] = [
         link: '/clients',
       },
       {
-        title: 'Auctions',
-        icon: 'i-lucide-gavel',
-        link: '/auctions/upcoming',
+        title: 'Estimates',
+        icon: 'i-lucide-scroll-text',
+        link: '/estimates/all',
+      },
+    ],
+  },
+  {
+    heading: 'Job Docs',
+    items: [
+      {
+        title: 'Job Hazard Analysis (JHA)',
+        icon: 'i-lucide-shield-alert',
+        link: '/job-docs/jha',
       },
       {
-        title: 'Tasks',
-        icon: 'i-lucide-calendar-check-2',
-        link: '/tasks',
+        title: 'Daily Job Tickets (DJT)',
+        icon: 'i-lucide-clipboard-list',
+        link: '/job-docs/djt',
+      },
+      {
+        title: 'Billing Tickets',
+        icon: 'i-lucide-receipt',
+        link: '/job-docs/billing-tickets',
+      },
+      {
+        title: 'Receipts & Costs',
+        icon: 'i-lucide-wallet',
+        link: '/job-docs/receipts-costs',
+      },
+      {
+        title: 'Prelims / Legal / Lien',
+        icon: 'i-lucide-scale',
+        link: '/job-docs/prelims',
+      },
+      {
+        title: 'Releases',
+        icon: 'i-lucide-file-check',
+        link: '/job-docs/releases',
+      },
+      {
+        title: 'Certified Payroll',
+        icon: 'i-lucide-badge-dollar-sign',
+        link: '/job-docs/certified-payroll',
+      },
+      {
+        title: 'Planning',
+        icon: 'i-lucide-gantt-chart',
+        link: '/job-docs/planning',
+      },
+      {
+        title: 'Signed Contracts',
+        icon: 'i-lucide-file-signature',
+        link: '/job-docs/signed-contracts',
+      },
+      {
+        title: 'Company Docs',
+        icon: 'i-lucide-building',
+        link: '/job-docs/company-docs',
+      },
+      {
+        title: 'Vehicle & Equipment Docs',
+        icon: 'i-lucide-truck',
+        link: '/job-docs/vehicle-equipment',
+      },
+      {
+        title: 'Pothole Logs',
+        icon: 'i-lucide-construction',
+        link: '/job-docs/pothole-logs',
+      },
+      {
+        title: 'Pre-Bore Logs',
+        icon: 'i-lucide-drill',
+        link: '/job-docs/pre-bore-logs',
+      },
+      {
+        title: 'USA 811 Tickets',
+        icon: 'i-lucide-ticket',
+        link: '/job-docs/usa-811',
       },
     ],
   },
@@ -40,9 +110,9 @@ export const navMenu: NavMenu[] = [
     heading: 'Apps',
     items: [
       {
-        title: 'Kanban Board',
+        title: 'Tasks',
         icon: 'i-lucide-kanban',
-        link: '/kanban',
+        link: '/tasks',
         new: true,
       },
       {
@@ -53,61 +123,8 @@ export const navMenu: NavMenu[] = [
       },
     ],
   },
-  {
-    heading: 'Sales & Commerce',
-    items: [
-      {
-        title: 'Quotes',
-        icon: 'i-lucide-file-text',
-        link: '/sales/quotes',
-      },
-      {
-        title: 'Invoices',
-        icon: 'i-lucide-receipt',
-        link: '/sales/invoices',
-      },
-      {
-        title: 'Orders',
-        icon: 'i-lucide-shopping-cart',
-        link: '/sales/orders',
-      },
-      {
-        title: 'Products',
-        icon: 'i-lucide-package',
-        link: '/sales/products',
-      },
-      {
-        title: 'Customers',
-        icon: 'i-lucide-users',
-        link: '/sales/customers',
-      },
-    ],
-  },
-  {
-    heading: 'Inventory & Warehouse',
-    items: [
-      {
-        title: 'Stock Overview',
-        icon: 'i-lucide-warehouse',
-        link: '/inventory/stock',
-      },
-      {
-        title: 'Transfers',
-        icon: 'i-lucide-arrow-left-right',
-        link: '/inventory/transfers',
-      },
-      {
-        title: 'Purchase Orders',
-        icon: 'i-lucide-clipboard-list',
-        link: '/inventory/purchase-orders',
-      },
-      {
-        title: 'Vendors',
-        icon: 'i-lucide-truck',
-        link: '/inventory/vendors',
-      },
-    ],
-  },
+
+
   {
     heading: 'HR & Workforce',
     items: [
@@ -187,26 +204,7 @@ export const navMenu: NavMenu[] = [
       },
     ],
   },
-  {
-    heading: 'Project Management',
-    items: [
-      {
-        title: 'Projects',
-        icon: 'i-lucide-folder-kanban',
-        link: '/projects/list',
-      },
-      {
-        title: 'Timesheets',
-        icon: 'i-lucide-timer',
-        link: '/projects/timesheets',
-      },
-      {
-        title: 'Milestones',
-        icon: 'i-lucide-flag',
-        link: '/projects/milestones',
-      },
-    ],
-  },
+
   {
     heading: 'Support',
     items: [

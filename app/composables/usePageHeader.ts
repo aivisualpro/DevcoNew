@@ -2,6 +2,7 @@ interface PageHeaderState {
   title: string
   description?: string
   icon?: string
+  backLink?: { label: string; href: string }
 }
 
 const headerState = reactive<PageHeaderState>({
@@ -15,12 +16,14 @@ export function usePageHeader() {
     headerState.title = opts.title
     headerState.description = opts.description || ''
     headerState.icon = opts.icon || ''
+    headerState.backLink = opts.backLink
   }
 
   function clearHeader() {
     headerState.title = ''
     headerState.description = ''
     headerState.icon = ''
+    headerState.backLink = undefined
   }
 
   return {

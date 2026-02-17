@@ -223,3 +223,17 @@ button,
 [type="button"] {
   @apply cursor-pointer;
 }
+
+/* Row highlight animation when returning from detail view */
+@keyframes highlight-fade {
+  0%, 100% {
+    background-color: oklch(0.488 0.243 264.376 / 5%);
+  }
+  50% {
+    background-color: oklch(0.488 0.243 264.376 / 12%);
+  }
+}
+
+.animate-highlight-fade {
+  animation: highlight-fade 1s ease-in-out 3;
+}
