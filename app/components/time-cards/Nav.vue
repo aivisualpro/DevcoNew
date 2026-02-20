@@ -52,13 +52,29 @@ function getSundayOfWeek(mondayStr: string): string {
   return `${sy}-${sm}-${sd}`
 }
 
-/** Get ISO week number from a Monday date string */
-function getWeekNumber(mondayStr: string): number {
+/**
+ * Get ISO week number AND ISO year from a Monday date string.
+ * The ISO year is determined by the Thursday of that week.
+ * e.g. Monday 12/29/2025 → Thursday 01/01/2026 → ISO Year 2026, Week 1
+ */
+function getISOWeekData(mondayStr: string): { isoYear: number, weekNum: number } {
   const [y, m, d] = mondayStr.split('-').map(Number)
-  const date = new Date(y!, m! - 1, d!)
-  const startOfYear = new Date(date.getFullYear(), 0, 1)
-  const dayOfYear = Math.floor((date.getTime() - startOfYear.getTime()) / 86400000) + 1
-  return Math.ceil(dayOfYear / 7)
+  const monday = new Date(y!, m! - 1, d!)
+  // Thursday of this week (Monday + 3)
+  const thursday = new Date(monday)
+  thursday.setDate(monday.getDate() + 3)
+  const isoYear = thursday.getFullYear()
+
+  // Find Monday of ISO week 1: the week containing Jan 4th
+  const jan4 = new Date(isoYear, 0, 4)
+  const jan4Day = jan4.getDay() || 7 // Convert Sun=0 to 7
+  const week1Monday = new Date(jan4)
+  week1Monday.setDate(jan4.getDate() - jan4Day + 1)
+
+  const diffMs = monday.getTime() - week1Monday.getTime()
+  const weekNum = Math.floor(diffMs / (7 * 86400000)) + 1
+
+  return { isoYear, weekNum: weekNum > 0 ? weekNum : 1 }
 }
 
 /** Format YYYY-MM-DD → MM/DD */
@@ -112,15 +128,12 @@ const tree = computed<YearNode[]>(() => {
     const dateStr = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
     if (!dateStr) continue
 
-    const [yearStr] = dateStr.split('-')
-    const year = Number(yearStr)
-    if (!year) continue
-
     const monday = getMondayOfWeek(dateStr)
+    const { isoYear } = getISOWeekData(monday)
     const empName = tc.employeeName || 'Unknown'
 
-    if (!yearMap.has(year)) yearMap.set(year, new Map())
-    const weekMap = yearMap.get(year)!
+    if (!yearMap.has(isoYear)) yearMap.set(isoYear, new Map())
+    const weekMap = yearMap.get(isoYear)!
 
     if (!weekMap.has(monday)) weekMap.set(monday, new Map())
     const empMap = weekMap.get(monday)!
@@ -146,7 +159,11 @@ const tree = computed<YearNode[]>(() => {
         let empHours = 0
 
         for (const [dateStr, cards] of [...dayMap.entries()].sort((a, b) => b[0].localeCompare(a[0]))) {
-          const dayHrs = cards.reduce((sum: number, c: any) => sum + (Number(c.hours) || 0), 0)
+          const dayHrs = cards.reduce((sum: number, c: any) => {
+            const h = c.hours
+            const n = h == null ? 0 : typeof h === 'number' ? h : Number(String(h).replace(/[^0-9.\-]/g, '')) || 0
+            return sum + n
+          }, 0)
           empHours += dayHrs
           days.push({ dateStr, hours: Math.round(dayHrs * 100) / 100, cards })
         }
@@ -163,7 +180,7 @@ const tree = computed<YearNode[]>(() => {
       weeks.push({
         mondayStr: monday,
         sundayStr: getSundayOfWeek(monday),
-        weekNum: getWeekNumber(monday),
+        weekNum: getISOWeekData(monday).weekNum,
         totalHours: Math.round(weekHours * 100) / 100,
         employees,
       })
@@ -215,7 +232,7 @@ watch(() => tree.value, (t) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-0.5 p-2 select-none">
+  <div class="flex flex-col gap-0.5 p-2 select-none overflow-hidden">
     <!-- Loading -->
     <div v-if="!isFetched" class="flex items-center gap-2 px-3 py-4 text-muted-foreground">
       <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
@@ -231,16 +248,16 @@ watch(() => tree.value, (t) => {
     <!-- Year accordion -->
     <template v-for="yr in tree" :key="yr.year">
       <button
-        class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-accent w-full"
+        class="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-all hover:bg-accent"
         :class="currentPath === `/time-cards/${yr.year}` ? 'bg-accent text-accent-foreground' : ''"
         @click="clickYear(yr.year)"
       >
         <Icon
           :name="expandedYears.has(yr.year) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-          class="size-4 shrink-0 text-muted-foreground transition-transform"
+          class="size-3.5 shrink-0 text-muted-foreground"
         />
-        <span class="font-bold text-base flex-1 tabular-nums">{{ yr.year }}</span>
-        <Badge variant="outline" class="text-[10px] tabular-nums font-semibold px-2 py-0.5 bg-muted/50">
+        <span class="font-bold text-sm flex-1 tabular-nums">{{ yr.year }}</span>
+        <Badge variant="outline" class="text-[9px] tabular-nums font-semibold px-1.5 py-0 bg-muted/50 shrink-0">
           {{ fmtHours(yr.totalHours) }}
         </Badge>
       </button>
@@ -249,18 +266,18 @@ watch(() => tree.value, (t) => {
       <template v-if="expandedYears.has(yr.year)">
         <template v-for="wk in yr.weeks" :key="wk.mondayStr">
           <button
-            class="flex items-center gap-2 rounded-lg px-3 py-2 ml-4 text-left transition-all hover:bg-accent w-full"
+            class="flex items-center gap-1 rounded-lg pl-7 pr-3 py-1.5 text-left transition-all hover:bg-accent"
             :class="currentPath === `/time-cards/${yr.year}/${wk.mondayStr}` ? 'bg-accent text-accent-foreground' : ''"
             @click="clickWeek(yr.year, wk.mondayStr)"
           >
             <Icon
               :name="expandedWeeks.has(`${yr.year}-${wk.mondayStr}`) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-              class="size-3.5 shrink-0 text-muted-foreground"
+              class="size-3 shrink-0 text-muted-foreground"
             />
-            <span class="text-sm font-semibold flex-1 tabular-nums">
+            <span class="text-xs font-semibold flex-1 tabular-nums truncate">
               ({{ wk.weekNum }}) {{ shortDate(wk.mondayStr) }}-{{ shortDate(wk.sundayStr) }}
             </span>
-            <Badge variant="outline" class="text-[9px] tabular-nums font-medium px-1.5 py-0 bg-muted/30">
+            <Badge variant="outline" class="text-[9px] tabular-nums font-medium px-1.5 py-0 bg-muted/30 shrink-0">
               {{ fmtHours(wk.totalHours) }}
             </Badge>
           </button>
@@ -269,7 +286,7 @@ watch(() => tree.value, (t) => {
           <template v-if="expandedWeeks.has(`${yr.year}-${wk.mondayStr}`)">
             <template v-for="emp in wk.employees" :key="emp.name">
               <button
-                class="flex items-center gap-2 rounded-lg px-3 py-1.5 ml-8 text-left transition-all hover:bg-accent w-full"
+                class="flex items-center gap-1 rounded-lg pl-11 pr-3 py-1.5 text-left transition-all hover:bg-accent"
                 :class="currentPath === `/time-cards/${yr.year}/${wk.mondayStr}/${encodeURIComponent(emp.name)}` ? 'bg-accent text-accent-foreground' : ''"
                 @click="clickEmployee(yr.year, wk.mondayStr, emp.name)"
               >
@@ -277,11 +294,10 @@ watch(() => tree.value, (t) => {
                   :name="expandedEmployees.has(`${yr.year}-${wk.mondayStr}-${emp.name}`) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
                   class="size-3 shrink-0 text-muted-foreground"
                 />
-                <Icon name="i-lucide-user" class="size-3.5 shrink-0 text-muted-foreground/60" />
-                <span class="text-sm font-medium flex-1 truncate">{{ emp.name }}</span>
-                <span class="text-[10px] text-muted-foreground tabular-nums font-semibold shrink-0">
+                <span class="text-xs font-medium flex-1 truncate min-w-0">{{ emp.name }}</span>
+                <Badge variant="outline" class="text-[9px] tabular-nums font-semibold px-1.5 py-0 bg-muted/30 shrink-0">
                   {{ fmtHours(emp.totalHours) }}
-                </span>
+                </Badge>
               </button>
 
               <!-- Days -->
@@ -289,15 +305,15 @@ watch(() => tree.value, (t) => {
                 <button
                   v-for="day in emp.days"
                   :key="day.dateStr"
-                  class="flex items-center gap-2 rounded-lg px-3 py-1.5 ml-14 text-left transition-all hover:bg-accent w-full"
+                  class="flex items-center gap-1 rounded-lg pl-14 pr-3 py-1 text-left transition-all hover:bg-accent"
                   :class="currentPath === `/time-cards/${yr.year}/${wk.mondayStr}/${encodeURIComponent(emp.name)}/${day.dateStr}` ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
                   @click="clickDay(yr.year, wk.mondayStr, emp.name, day.dateStr)"
                 >
                   <Icon name="i-lucide-calendar-days" class="size-3 shrink-0" />
-                  <span class="text-xs font-medium flex-1 tabular-nums">{{ fullDate(day.dateStr) }}</span>
-                  <span class="text-[10px] tabular-nums font-semibold shrink-0">
+                  <span class="text-[11px] font-medium flex-1 tabular-nums">{{ fullDate(day.dateStr) }}</span>
+                  <Badge variant="outline" class="text-[9px] tabular-nums font-semibold px-1.5 py-0 bg-muted/30 shrink-0">
                     {{ fmtHours(day.hours) }}
-                  </span>
+                  </Badge>
                 </button>
               </template>
             </template>

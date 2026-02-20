@@ -63,6 +63,16 @@ function getMondayOfWeek(dateStr: string): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+/** Get ISO year for a date (year determined by Thursday of the week) */
+function getISOYear(dateStr: string): number {
+  const monday = getMondayOfWeek(dateStr)
+  const [y, m, d] = monday.split('-').map(Number)
+  const mon = new Date(y!, m! - 1, d!)
+  const thu = new Date(mon)
+  thu.setDate(mon.getDate() + 3)
+  return thu.getFullYear()
+}
+
 function formatTime(dateStr: string | null): string {
   if (!dateStr) return '—'
   // ISO: "2024-09-13T07:00:00.000Z"
@@ -100,6 +110,14 @@ function shortDate(str: string): string {
   return `${m}/${d}/${y}`
 }
 
+/** Parse a numeric value that might be stored as "$31.20" or "25.00" or a raw number */
+function toNum(val: any): number {
+  if (val == null) return 0
+  if (typeof val === 'number') return val
+  const cleaned = String(val).replace(/[^0-9.\-]/g, '')
+  return Number(cleaned) || 0
+}
+
 function fmtNum(n: number, decimals = 2) {
   return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
 }
@@ -131,8 +149,11 @@ const tableCards = computed(() => {
     const tcDate = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
     if (!tcDate) return false
 
-    const tcYear = tcDate.split('-')[0]
-    if (year.value && tcYear !== year.value) return false
+    // Use ISO year (Thursday-based) when filtering by year
+    if (year.value) {
+      const tcISOYear = getISOYear(tcDate)
+      if (tcISOYear !== Number(year.value)) return false
+    }
 
     if (mondayStr.value) {
       const tcMonday = getMondayOfWeek(tcDate)
@@ -160,9 +181,35 @@ const filteredTableCards = computed(() => {
   )
 })
 
+// Totals computed from ALL matching records (not just visible)
 const tableTotalHours = computed(() =>
-  filteredTableCards.value.reduce((sum, tc) => sum + (Number(tc.hours) || 0), 0),
+  filteredTableCards.value.reduce((sum, tc) => sum + (toNum(tc.hours)), 0),
 )
+
+// ─── Infinite scroll ───
+const PAGE_SIZE = 50
+const displayCount = ref(PAGE_SIZE)
+const tableScrollRef = ref<HTMLElement | null>(null)
+
+// Reset display count when filters change
+watch([year, mondayStr, employeeName, tableSearch], () => {
+  displayCount.value = PAGE_SIZE
+})
+
+const visibleTableCards = computed(() => {
+  return filteredTableCards.value.slice(0, displayCount.value)
+})
+
+const hasMore = computed(() => displayCount.value < filteredTableCards.value.length)
+
+function onTableScroll(e: Event) {
+  const el = e.target as HTMLElement
+  if (!el) return
+  const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200
+  if (nearBottom && hasMore.value) {
+    displayCount.value += PAGE_SIZE
+  }
+}
 
 // ─── Filtered data for DETAIL view ───
 const dayCards = computed(() => {
@@ -174,19 +221,19 @@ const dayCards = computed(() => {
   })
 })
 
-const totalHours = computed(() => dayCards.value.reduce((sum, tc) => sum + (Number(tc.hours) || 0), 0))
-const totalSiteRate = computed(() => dayCards.value.reduce((sum, tc) => sum + (Number(tc.hourlyRateSITE) || 0), 0))
-const totalDriveRate = computed(() => dayCards.value.reduce((sum, tc) => sum + (Number(tc.hourlyRateDrive) || 0), 0))
-const totalDistance = computed(() => dayCards.value.reduce((sum, tc) => sum + (Number(tc.distance) || 0), 0))
+const totalHours = computed(() => dayCards.value.reduce((sum, tc) => sum + (toNum(tc.hours)), 0))
+const totalSiteRate = computed(() => dayCards.value.reduce((sum, tc) => sum + (toNum(tc.hourlyRateSITE)), 0))
+const totalDriveRate = computed(() => dayCards.value.reduce((sum, tc) => sum + (toNum(tc.hourlyRateDrive)), 0))
+const totalDistance = computed(() => dayCards.value.reduce((sum, tc) => sum + (toNum(tc.distance)), 0))
 
 // ─── Click row → navigate to detail ───
 function viewDetail(tc: any) {
   const tcDate = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
   if (!tcDate) return
-  const tcYear = tcDate.split('-')[0]
+  const tcISOYear = getISOYear(tcDate)
   const tcMonday = getMondayOfWeek(tcDate)
   const tcName = tc.employeeName || 'Unknown'
-  navigateTo(`/time-cards/${tcYear}/${tcMonday}/${encodeURIComponent(tcName)}/${tcDate}`)
+  navigateTo(`/time-cards/${tcISOYear}/${tcMonday}/${encodeURIComponent(tcName)}/${tcDate}`)
 }
 
 // ─── Sync ───
@@ -233,7 +280,7 @@ async function handleRefresh() {
       <!-- ═══════════════════ TABLE VIEW (1-3 segments) ═══════════════════ -->
       <template v-if="!isDetailView">
         <!-- Table -->
-        <div class="flex-1 min-h-0 overflow-auto">
+        <div class="flex-1 min-h-0 overflow-auto" @scroll="onTableScroll">
           <!-- Loading -->
           <div v-if="!isFetched" class="flex items-center justify-center h-64">
             <Icon name="i-lucide-loader-2" class="size-8 animate-spin text-muted-foreground" />
@@ -256,7 +303,7 @@ async function handleRefresh() {
             </TableHeader>
             <TableBody>
               <TableRow
-                v-for="(tc, idx) in filteredTableCards"
+                v-for="(tc, idx) in visibleTableCards"
                 :key="tc._id || idx"
                 class="cursor-pointer hover:bg-accent/50 transition-colors"
                 @click="viewDetail(tc)"
@@ -287,20 +334,26 @@ async function handleRefresh() {
                   {{ formatTime(tc.lunchStart) }} – {{ formatTime(tc.lunchEnd) }}
                 </TableCell>
                 <TableCell class="text-right text-xs font-semibold tabular-nums text-primary">
-                  {{ fmtNum(Number(tc.hours) || 0) }}
+                  {{ fmtNum(toNum(tc.hours)) }}
                 </TableCell>
                 <TableCell class="text-right text-xs tabular-nums">
-                  {{ fmtMoney(Number(tc.hourlyRateSITE) || 0) }}
+                  {{ fmtMoney(toNum(tc.hourlyRateSITE)) }}
                 </TableCell>
                 <TableCell class="text-right text-xs tabular-nums">
-                  {{ fmtMoney(Number(tc.hourlyRateDrive) || 0) }}
+                  {{ fmtMoney(toNum(tc.hourlyRateDrive)) }}
                 </TableCell>
                 <TableCell class="text-right text-xs tabular-nums text-muted-foreground">
-                  {{ fmtNum(Number(tc.distance) || 0, 1) }}
+                  {{ fmtNum(toNum(tc.distance), 1) }}
                 </TableCell>
               </TableRow>
             </TableBody>
           </Table>
+
+          <!-- Load more indicator -->
+          <div v-if="hasMore" class="flex items-center justify-center py-4 gap-2 text-muted-foreground">
+            <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
+            <span class="text-xs">Showing {{ visibleTableCards.length }} of {{ filteredTableCards.length }}... scroll for more</span>
+          </div>
 
           <!-- Empty -->
           <div v-else class="flex flex-col items-center justify-center py-20">
@@ -411,7 +464,7 @@ async function handleRefresh() {
                       </Badge>
                     </div>
                     <span class="text-lg font-bold tabular-nums text-primary">
-                      {{ fmtNum(Number(tc.hours) || 0) }} hrs
+                      {{ fmtNum(toNum(tc.hours)) }} hrs
                     </span>
                   </div>
 
@@ -450,19 +503,19 @@ async function handleRefresh() {
                     <div class="rounded-lg bg-emerald-500/5 p-2.5 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30">
                       <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Site Rate</p>
                       <p class="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                        {{ fmtMoney(Number(tc.hourlyRateSITE) || 0) }}<span class="text-[10px] font-normal">/hr</span>
+                        {{ fmtMoney(toNum(tc.hourlyRateSITE)) }}<span class="text-[10px] font-normal">/hr</span>
                       </p>
                     </div>
                     <div class="rounded-lg bg-blue-500/5 p-2.5 ring-1 ring-blue-200/30 dark:ring-blue-800/30">
                       <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Drive Rate</p>
                       <p class="text-sm font-bold tabular-nums text-blue-600 dark:text-blue-400">
-                        {{ fmtMoney(Number(tc.hourlyRateDrive) || 0) }}<span class="text-[10px] font-normal">/hr</span>
+                        {{ fmtMoney(toNum(tc.hourlyRateDrive)) }}<span class="text-[10px] font-normal">/hr</span>
                       </p>
                     </div>
                     <div class="rounded-lg bg-amber-500/5 p-2.5 ring-1 ring-amber-200/30 dark:ring-amber-800/30">
                       <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Distance</p>
                       <p class="text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400">
-                        {{ fmtNum(Number(tc.distance) || 0, 1) }} <span class="text-[10px] font-normal">mi</span>
+                        {{ fmtNum(toNum(tc.distance), 1) }} <span class="text-[10px] font-normal">mi</span>
                       </p>
                     </div>
                   </div>
