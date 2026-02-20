@@ -7,30 +7,24 @@
 export default defineEventHandler(async () => {
   try {
     const firestore = useFirestoreAdmin()
+    // Only select the lightweight fields needed for sidebar nav + table listing.
+    // Heavy fields (locationIn, locationOut, createdBy, etc.) are omitted to
+    // keep the payload small across 6,000+ documents.
     const snapshot = await firestore
       .collection('devcoTimeCards')
       .select(
-        'legacy_id',
-        'scheduleId',
-        'legacy_scheduleId',
-        'employeeId',
         'employeeName',
-        'employeeAvatar',
         'type',
         'clockIn',
+        'clockOut',
         'lunchStart',
         'lunchEnd',
-        'clockOut',
-        'locationIn',
-        'locationOut',
         'hourlyRateSITE',
         'hourlyRateDrive',
-        'dumpWashout',
-        'comments',
-        'createdBy',
-        'createdAt',
         'distance',
         'hours',
+        'scheduleDate',
+        'createdAt',
       )
       .get()
 

@@ -86,7 +86,7 @@ export default defineEventHandler(async () => {
     const db = mongoClient.db('devco')
     const mongoSchedules = await db.collection('devcoschedules').find(
       { timesheet: { $exists: true, $ne: [] } },
-      { projection: { _id: 1, timesheet: 1 } },
+      { projection: { _id: 1, timesheet: 1, fromDate: 1 } },
     ).toArray()
 
     if (!mongoSchedules.length) {
@@ -133,6 +133,7 @@ export default defineEventHandler(async () => {
       const scheduleLegacyId = schedule._id.toString()
       const scheduleFirebaseId = scheduleByLegacyId.get(scheduleLegacyId) || null
       const timesheetArray = schedule.timesheet || []
+      const scheduleFromDate = schedule.fromDate ? sanitizeForFirestore(schedule.fromDate) : null
 
       for (const entry of timesheetArray) {
         if (!entry || !entry._id) continue
@@ -165,6 +166,7 @@ export default defineEventHandler(async () => {
           createdAt: entry.createdAt ? sanitizeForFirestore(entry.createdAt) : null,
           distance: entry.distance ?? null,
           hours: entry.hours ?? null,
+          scheduleDate: scheduleFromDate,
           _syncedAt: FieldValue.serverTimestamp(),
         }
 

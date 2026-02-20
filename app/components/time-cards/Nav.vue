@@ -12,11 +12,19 @@ fetchAllTimeCards()
 
 // ─── Helpers (timezone-agnostic) ───
 
-/** Extract date portion from ISO or date string — no timezone conversion */
+/** Extract date portion from various formats — no timezone conversion */
 function extractDateStr(dateStr: string | null): string {
   if (!dateStr) return ''
+  // ISO format: "2024-09-13T07:00:00.000Z"
   if (dateStr.includes('T')) return dateStr.split('T')[0] || ''
-  if (dateStr.length >= 10) return dateStr.substring(0, 10)
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return dateStr.substring(0, 10)
+  // US format: "9/13/2024 7:16:00 AM" or "9/13/2024"
+  const usMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  if (usMatch) {
+    const [, mm, dd, yyyy] = usMatch
+    return `${yyyy}-${mm!.padStart(2, '0')}-${dd!.padStart(2, '0')}`
+  }
   return dateStr
 }
 
@@ -101,7 +109,7 @@ const tree = computed<YearNode[]>(() => {
   const yearMap = new Map<number, Map<string, Map<string, Map<string, any[]>>>>()
 
   for (const tc of allTimeCards.value) {
-    const dateStr = extractDateStr(tc.clockIn) || extractDateStr(tc.createdAt)
+    const dateStr = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
     if (!dateStr) continue
 
     const [yearStr] = dateStr.split('-')
@@ -173,27 +181,26 @@ const expandedYears = ref<Set<number>>(new Set())
 const expandedWeeks = ref<Set<string>>(new Set())
 const expandedEmployees = ref<Set<string>>(new Set())
 
-function toggleYear(y: number) {
+function clickYear(y: number) {
   expandedYears.value.has(y) ? expandedYears.value.delete(y) : expandedYears.value.add(y)
+  navigateTo(`/time-cards/${y}`)
 }
-function toggleWeek(key: string) {
+function clickWeek(yr: number, mondayStr: string) {
+  const key = `${yr}-${mondayStr}`
   expandedWeeks.value.has(key) ? expandedWeeks.value.delete(key) : expandedWeeks.value.add(key)
+  navigateTo(`/time-cards/${yr}/${mondayStr}`)
 }
-function toggleEmployee(key: string) {
+function clickEmployee(yr: number, mondayStr: string, empName: string) {
+  const key = `${yr}-${mondayStr}-${empName}`
   expandedEmployees.value.has(key) ? expandedEmployees.value.delete(key) : expandedEmployees.value.add(key)
+  navigateTo(`/time-cards/${yr}/${mondayStr}/${encodeURIComponent(empName)}`)
+}
+function clickDay(yr: number, mondayStr: string, empName: string, dateStr: string) {
+  navigateTo(`/time-cards/${yr}/${mondayStr}/${encodeURIComponent(empName)}/${dateStr}`)
 }
 
-// ─── Route selection ───
-const selectedKey = computed(() => {
-  const slug = route.params.slug
-  if (Array.isArray(slug)) return slug.join('/')
-  return slug || ''
-})
-
-function selectDay(yearNum: number, mondayStr: string, empName: string, dateStr: string) {
-  const key = `${yearNum}/${mondayStr}/${encodeURIComponent(empName)}/${dateStr}`
-  navigateTo(`/time-cards/${key}`)
-}
+// ─── Route-based active state ───
+const currentPath = computed(() => route.path)
 
 function fmtHours(h: number) {
   return h.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -225,7 +232,8 @@ watch(() => tree.value, (t) => {
     <template v-for="yr in tree" :key="yr.year">
       <button
         class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-accent w-full"
-        @click="toggleYear(yr.year)"
+        :class="currentPath === `/time-cards/${yr.year}` ? 'bg-accent text-accent-foreground' : ''"
+        @click="clickYear(yr.year)"
       >
         <Icon
           :name="expandedYears.has(yr.year) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
@@ -242,7 +250,8 @@ watch(() => tree.value, (t) => {
         <template v-for="wk in yr.weeks" :key="wk.mondayStr">
           <button
             class="flex items-center gap-2 rounded-lg px-3 py-2 ml-4 text-left transition-all hover:bg-accent w-full"
-            @click="toggleWeek(`${yr.year}-${wk.mondayStr}`)"
+            :class="currentPath === `/time-cards/${yr.year}/${wk.mondayStr}` ? 'bg-accent text-accent-foreground' : ''"
+            @click="clickWeek(yr.year, wk.mondayStr)"
           >
             <Icon
               :name="expandedWeeks.has(`${yr.year}-${wk.mondayStr}`) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
@@ -261,7 +270,8 @@ watch(() => tree.value, (t) => {
             <template v-for="emp in wk.employees" :key="emp.name">
               <button
                 class="flex items-center gap-2 rounded-lg px-3 py-1.5 ml-8 text-left transition-all hover:bg-accent w-full"
-                @click="toggleEmployee(`${yr.year}-${wk.mondayStr}-${emp.name}`)"
+                :class="currentPath === `/time-cards/${yr.year}/${wk.mondayStr}/${encodeURIComponent(emp.name)}` ? 'bg-accent text-accent-foreground' : ''"
+                @click="clickEmployee(yr.year, wk.mondayStr, emp.name)"
               >
                 <Icon
                   :name="expandedEmployees.has(`${yr.year}-${wk.mondayStr}-${emp.name}`) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
@@ -280,8 +290,8 @@ watch(() => tree.value, (t) => {
                   v-for="day in emp.days"
                   :key="day.dateStr"
                   class="flex items-center gap-2 rounded-lg px-3 py-1.5 ml-14 text-left transition-all hover:bg-accent w-full"
-                  :class="selectedKey === `${yr.year}/${wk.mondayStr}/${encodeURIComponent(emp.name)}/${day.dateStr}` ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
-                  @click="selectDay(yr.year, wk.mondayStr, emp.name, day.dateStr)"
+                  :class="currentPath === `/time-cards/${yr.year}/${wk.mondayStr}/${encodeURIComponent(emp.name)}/${day.dateStr}` ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
+                  @click="clickDay(yr.year, wk.mondayStr, emp.name, day.dateStr)"
                 >
                   <Icon name="i-lucide-calendar-days" class="size-3 shrink-0" />
                   <span class="text-xs font-medium flex-1 tabular-nums">{{ fullDate(day.dateStr) }}</span>
