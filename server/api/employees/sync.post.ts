@@ -7,7 +7,8 @@ import { useMongoClient } from '../../utils/mongodb'
  * Handles ObjectId, Date, Buffer, nested objects, and arrays recursively.
  */
 function sanitizeForFirestore(value: any): any {
-  if (value === null || value === undefined) return null
+  if (value === null || value === undefined)
+    return null
 
   // ObjectId → string
   if (value instanceof ObjectId || (value && typeof value.toHexString === 'function')) {
@@ -65,7 +66,7 @@ function sanitizeForFirestore(value: any): any {
  *   4. Remove orphaned Firestore docs whose `legacy_id` no longer exists in MongoDB
  *   5. Return sync stats
  */
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (_event) => {
   const startTime = Date.now()
 
   try {

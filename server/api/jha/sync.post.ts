@@ -6,17 +6,24 @@ import { useMongoClient } from '../../utils/mongodb'
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
  */
 function sanitizeForFirestore(value: any): any {
-  if (value === null || value === undefined) return null
-  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function')) return value.toString()
-  if (value instanceof Date) return value.toISOString()
-  if (Buffer.isBuffer(value)) return value.toString('base64')
-  if (Array.isArray(value)) return value.map(sanitizeForFirestore)
+  if (value === null || value === undefined)
+    return null
+  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function'))
+    return value.toString()
+  if (value instanceof Date)
+    return value.toISOString()
+  if (Buffer.isBuffer(value))
+    return value.toString('base64')
+  if (Array.isArray(value))
+    return value.map(sanitizeForFirestore)
   if (typeof value === 'object' && value !== null) {
-    if (value.constructor && value.constructor !== Object) return value.toString()
+    if (value.constructor && value.constructor !== Object)
+      return value.toString()
     const result: Record<string, any> = {}
     for (const [k, v] of Object.entries(value)) {
       const sanitized = sanitizeForFirestore(v)
-      if (sanitized !== undefined) result[k] = sanitized
+      if (sanitized !== undefined)
+        result[k] = sanitized
     }
     return result
   }
@@ -59,9 +66,12 @@ export default defineEventHandler(async () => {
         legacyId: d.legacy_id ? d.legacy_id.toString() : null,
       }
 
-      if (info.email) empByEmail.set(info.email, info)
-      if (info.name) empByName.set(info.name.toLowerCase(), info)
-      if (info.legacyId) empByLegacyId.set(info.legacyId, info)
+      if (info.email)
+        empByEmail.set(info.email, info)
+      if (info.name)
+        empByName.set(info.name.toLowerCase(), info)
+      if (info.legacyId)
+        empByLegacyId.set(info.legacyId, info)
     })
 
     // B. Schedules: Build lookup for Legacy ID → Firebase ID
@@ -77,7 +87,7 @@ export default defineEventHandler(async () => {
 
     // C. Clients: Build lookup for Legacy ID → Firebase ID & Name
     const clientsSnap = await firestore.collection('devcoClients').select('legacy_id', 'name').get()
-    const clientByLegacyId = new Map<string, { id: string; name: string }>()
+    const clientByLegacyId = new Map<string, { id: string, name: string }>()
 
     clientsSnap.docs.forEach((doc) => {
       const d = doc.data()
@@ -121,14 +131,17 @@ export default defineEventHandler(async () => {
     catch { /* Collection might not exist yet */ }
 
     // Helper: resolve employee
-    function resolveEmployee(raw: any): { firebaseId: string; name: string; avatar: string } | null {
-      if (!raw) return null
+    function resolveEmployee(raw: any): { firebaseId: string, name: string, avatar: string } | null {
+      if (!raw)
+        return null
       const str = raw.toString().trim()
       const strLower = str.toLowerCase()
 
       let info = empByLegacyId.get(str)
-      if (!info) info = empByEmail.get(strLower)
-      if (!info) info = empByName.get(strLower)
+      if (!info)
+        info = empByEmail.get(strLower)
+      if (!info)
+        info = empByName.get(strLower)
 
       return info || null
     }
@@ -145,7 +158,8 @@ export default defineEventHandler(async () => {
 
       for (const schedule of chunk) {
         const jha = schedule.jha
-        if (!jha || typeof jha !== 'object') continue
+        if (!jha || typeof jha !== 'object')
+          continue
 
         // Use JHA's own _id as legacy_id, fall back to schedule._id + '-jha'
         const jhaLegacyId = jha._id ? jha._id.toString() : `${schedule._id.toString()}-jha`

@@ -12,7 +12,7 @@ const props = defineProps<{
   showStatusCounts?: boolean
 }>()
 
-const entity = computed(() => props.entityName || 'Employee')
+const _entity = computed(() => props.entityName || 'Employee')
 
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, description: props.description, icon: props.icon })
@@ -77,7 +77,8 @@ const paginatedItems = computed(() => {
 })
 
 function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value) return
+  if (page < 1 || page > totalPages.value)
+    return
   currentPage.value = page
 }
 
@@ -105,7 +106,8 @@ function getBadgeClass(value: string): string {
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
@@ -113,7 +115,8 @@ function formatDate(value: string): string {
 }
 
 function getInitials(name: string): string {
-  if (!name) return '??'
+  if (!name)
+    return '??'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
@@ -142,11 +145,13 @@ const pageNumbers = computed(() => {
     return Array.from({ length: total }, (_, i) => i + 1)
   }
   const pages: (number | string)[] = [1]
-  if (current > 3) pages.push('...')
+  if (current > 3)
+    pages.push('...')
   for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
     pages.push(i)
   }
-  if (current < total - 2) pages.push('...')
+  if (current < total - 2)
+    pages.push('...')
   pages.push(total)
   return pages
 })
@@ -186,13 +191,16 @@ const pageNumbers = computed(() => {
   </ClientOnly>
 
   <div class="w-full flex flex-col h-full overflow-hidden">
-
     <!-- Error Banner -->
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load employees</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load employees
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
       <Button variant="outline" size="sm" @click="handleRefresh">
         Retry
@@ -203,7 +211,9 @@ const pageNumbers = computed(() => {
     <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">Loading employees...</p>
+        <p class="text-sm">
+          Loading employees...
+        </p>
       </div>
     </div>
 

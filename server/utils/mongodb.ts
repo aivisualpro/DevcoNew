@@ -8,7 +8,8 @@ let _client: MongoClient | null = null
  * which is populated from MONGODB_URI in .env.local via nuxt.config.ts.
  */
 export async function useMongoClient(): Promise<MongoClient> {
-  if (_client) return _client
+  if (_client)
+    return _client
 
   const config = useRuntimeConfig()
   const uri = config.mongodbUri || process.env.MONGODB_URI
@@ -23,4 +24,3 @@ export async function useMongoClient(): Promise<MongoClient> {
 
   return _client
 }
-

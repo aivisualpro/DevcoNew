@@ -35,7 +35,8 @@ function dayDate(dayId: string) {
  * Count schedules for a given day. Uses timezone-agnostic date comparison.
  */
 function getCountForDay(dayId: string): number {
-  if (!isFetched.value) return 0
+  if (!isFetched.value)
+    return 0
 
   const targetDate = getDateForDay(dayId)
   const targetDateStr = format(targetDate, 'yyyy-MM-dd')
@@ -48,7 +49,8 @@ function getCountForDay(dayId: string): number {
 
   return allSchedules.value.filter((s) => {
     const fromDate = s.fromDate || ''
-    if (!fromDate) return false
+    if (!fromDate)
+      return false
 
     let scheduleDateStr = ''
     if (fromDate.includes('T')) {

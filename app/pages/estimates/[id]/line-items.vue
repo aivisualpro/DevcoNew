@@ -1,12 +1,59 @@
 <script setup lang="ts">
+import { useEstimatesApi } from '~/composables/useEstimatesApi'
+
 const props = defineProps<{
   estimate: any
   isLoading: boolean
 }>()
 
+const { allEstimates, fetchAllEstimates, isFetched } = useEstimatesApi()
+
+onMounted(() => {
+  if (!isFetched.value) {
+    fetchAllEstimates()
+  }
+})
+
+const options = computed(() => {
+  const miscNames = new Set<string>()
+  const miscClassifications = new Set<string>()
+  const uoms = new Set<string>()
+
+  allEstimates.value.forEach((est) => {
+    const misc = est.miscellaneousItems || est.miscellaneous || []
+    misc.forEach((item: any) => {
+      if (item.name)
+        miscNames.add(item.name)
+      if (item.classification)
+        miscClassifications.add(item.classification)
+      if (item.uom)
+        uoms.add(item.uom)
+    })
+
+    const eq = est.equipmentItems || est.equipment || []
+    eq.forEach((item: any) => {
+      if (item.uom)
+        uoms.add(item.uom)
+    })
+
+    const mat = est.materialItems || est.material || est.materials || []
+    mat.forEach((item: any) => {
+      if (item.uom)
+        uoms.add(item.uom)
+    })
+  })
+
+  return {
+    miscNames: Array.from(miscNames).sort(),
+    miscClassifications: Array.from(miscClassifications).sort(),
+    uoms: Array.from(uoms).sort(),
+  }
+})
+
 // ─── Formatters ───
 function formatCurrency(value: any): string {
-  if (value === null || value === undefined || isNaN(value)) return '$0.00'
+  if (value === null || value === undefined || Number.isNaN(value))
+    return '$0.00'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(value))
 }
 
@@ -22,7 +69,7 @@ interface Section {
   bgColor: string
   icon: string
   items: LineItem[]
-  columns: { key: string; label: string; type?: string; width?: string }[]
+  columns: { key: string, label: string, type?: string, width?: string, optionsKey?: string, compute?: (item: any) => number }[]
   totalKey: string
 }
 
@@ -43,7 +90,8 @@ const activeTab = ref('all')
 
 // Define line item sections from the estimate data
 const sections = computed<Section[]>(() => {
-  if (!props.estimate) return []
+  if (!props.estimate)
+    return []
 
   const est = props.estimate
   const result: Section[] = []
@@ -224,11 +272,13 @@ const sections = computed<Section[]>(() => {
       icon: 'i-lucide-puzzle',
       items: miscItems,
       columns: [
-        { key: 'name', label: 'Miscellaneous', width: 'w-48' },
-        { key: 'classification', label: 'Classification' },
-        { key: 'qty', label: 'Qty', type: 'number' },
-        { key: 'cost', label: 'Cost', type: 'currency' },
-        { key: 'total', label: 'Total', type: 'currency' },
+        { key: 'name', label: 'Miscellaneous', type: 'combobox', optionsKey: 'miscNames', width: 'min-w-48' },
+        { key: 'classification', label: 'Classification', type: 'combobox', optionsKey: 'miscClassifications', width: 'min-w-32' },
+        { key: 'qty', label: 'Qty', type: 'number', width: 'w-20' },
+        { key: 'days', label: 'Days', type: 'number', width: 'w-20' },
+        { key: 'uom', label: 'UOM', type: 'combobox', optionsKey: 'uoms', width: 'w-24' },
+        { key: 'cost', label: 'Cost', type: 'currency', width: 'w-28' },
+        { key: 'total', label: 'Total', type: 'currency', width: 'w-28', compute: (i: any) => (i.qty || 0) * (i.days || 1) * (i.cost || 0) },
       ],
       totalKey: 'miscellaneousSubTotal',
     })
@@ -239,7 +289,8 @@ const sections = computed<Section[]>(() => {
 
 // Filtered sections for the active tab
 const visibleSections = computed(() => {
-  if (activeTab.value === 'all') return sections.value
+  if (activeTab.value === 'all')
+    return sections.value
   return sections.value.filter(s => s.key === activeTab.value)
 })
 
@@ -250,6 +301,78 @@ function getTabCount(key: string): number {
   }
   const section = sections.value.find(s => s.key === key)
   return section ? section.items.length : 0
+}
+
+function addEmptyLineItem(sectionKey: string) {
+  if (!props.estimate)
+    return
+
+  const mapping: Record<string, string[]> = {
+    labor: ['laborItems', 'labor'],
+    equipment: ['equipmentItems', 'equipment'],
+    material: ['materialItems', 'materials', 'material'],
+    tools: ['toolsItems', 'tools'],
+    overhead: ['overheadItems', 'overhead'],
+    subcontractor: ['subcontractorItems', 'subcontractors', 'subcontractor'],
+    disposal: ['disposalItems', 'disposal'],
+    miscellaneous: ['miscellaneousItems', 'miscellaneous'],
+  }
+
+  const possibleKeys = mapping[sectionKey]
+  if (!possibleKeys)
+    return
+
+  let targetKey: string = possibleKeys[0] as string
+  for (const key of possibleKeys) {
+    if (Array.isArray(props.estimate[key])) {
+      targetKey = key
+      break
+    }
+  }
+
+  if (!Array.isArray(props.estimate[targetKey])) {
+    // eslint-disable-next-line vue/no-mutating-props
+    props.estimate[targetKey] = []
+  }
+
+  // eslint-disable-next-line vue/no-mutating-props
+  props.estimate[targetKey].push({})
+}
+
+function duplicateLineItem(sectionKey: string, idx: number) {
+  if (!props.estimate)
+    return
+
+  const mapping: Record<string, string[]> = {
+    labor: ['laborItems', 'labor'],
+    equipment: ['equipmentItems', 'equipment'],
+    material: ['materialItems', 'materials', 'material'],
+    tools: ['toolsItems', 'tools'],
+    overhead: ['overheadItems', 'overhead'],
+    subcontractor: ['subcontractorItems', 'subcontractors', 'subcontractor'],
+    disposal: ['disposalItems', 'disposal'],
+    miscellaneous: ['miscellaneousItems', 'miscellaneous'],
+  }
+
+  const possibleKeys = mapping[sectionKey]
+  if (!possibleKeys)
+    return
+
+  let targetKey: string = possibleKeys[0] as string
+  for (const key of possibleKeys) {
+    if (Array.isArray(props.estimate[key])) {
+      targetKey = key
+      break
+    }
+  }
+
+  const arr = props.estimate[targetKey]
+  if (!Array.isArray(arr) || !arr[idx])
+    return
+
+  const clone = JSON.parse(JSON.stringify(arr[idx]))
+
+  arr.splice(idx + 1, 0, clone)
 }
 </script>
 
@@ -265,7 +388,7 @@ function getTabCount(key: string): number {
           :class="[
             activeTab === tab.key
               ? 'text-foreground bg-background border border-b-0 border-border'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
           ]"
           @click="activeTab = tab.key"
         >
@@ -292,7 +415,9 @@ function getTabCount(key: string): number {
       <div v-if="isLoading && !estimate" class="flex items-center justify-center h-64">
         <div class="flex flex-col items-center gap-3 text-muted-foreground">
           <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-          <p class="text-sm">Loading line items...</p>
+          <p class="text-sm">
+            Loading line items...
+          </p>
         </div>
       </div>
 
@@ -301,8 +426,16 @@ function getTabCount(key: string): number {
         <!-- Empty State -->
         <div v-if="visibleSections.length === 0" class="flex flex-col items-center justify-center h-64 text-muted-foreground">
           <Icon name="i-lucide-package-open" class="size-12 mb-3 opacity-50" />
-          <p class="text-sm font-medium">No {{ activeTab === 'all' ? '' : activeTab + ' ' }}line items found</p>
-          <p class="text-xs mt-1">This estimate doesn't have any {{ activeTab === 'all' ? '' : activeTab + ' ' }}line items yet.</p>
+          <p class="text-sm font-medium">
+            No {{ activeTab === 'all' ? '' : `${activeTab} ` }}line items found
+          </p>
+          <p class="text-xs mt-1">
+            This estimate doesn't have any {{ activeTab === 'all' ? '' : `${activeTab} ` }}line items yet.
+          </p>
+          <Button v-if="activeTab !== 'all'" variant="outline" class="mt-4 gap-2" @click="addEmptyLineItem(activeTab)">
+            <Icon name="i-lucide-plus" class="size-4" />
+            Add {{ activeTab }} item
+          </Button>
         </div>
 
         <!-- Section Tables -->
@@ -317,12 +450,20 @@ function getTabCount(key: string): number {
               <div class="size-1.5 rounded-full" :class="section.bgColor" />
               <h3 class="text-sm font-semibold flex items-center gap-2">
                 {{ section.label }}
-                <Badge variant="secondary" class="text-[10px] h-5 tabular-nums">{{ section.items.length }}</Badge>
+                <Badge variant="secondary" class="text-[10px] h-5 tabular-nums">
+                  {{ section.items.length }}
+                </Badge>
               </h3>
             </div>
-            <span class="text-sm font-bold tabular-nums">
-              {{ formatCurrency(estimate[section.totalKey] || 0) }}
-            </span>
+            <div class="flex items-center gap-4">
+              <span class="text-sm font-bold tabular-nums">
+                {{ formatCurrency(estimate[section.totalKey] || 0) }}
+              </span>
+              <Button size="sm" variant="outline" class="h-6 px-2 text-[10px] gap-1" @click="addEmptyLineItem(section.key)">
+                <Icon name="i-lucide-plus" class="size-3" />
+                Add
+              </Button>
+            </div>
           </div>
 
           <!-- Section Table -->
@@ -330,7 +471,9 @@ function getTabCount(key: string): number {
             <table class="w-full text-[11px]">
               <thead>
                 <tr class="border-b bg-muted/30">
-                  <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">#</th>
+                  <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">
+                    #
+                  </th>
                   <th
                     v-for="col in section.columns"
                     :key="col.key"
@@ -345,29 +488,77 @@ function getTabCount(key: string): number {
                 <tr
                   v-for="(item, idx) in section.items"
                   :key="idx"
-                  class="hover:bg-muted/20 transition-colors"
+                  class="group/row hover:bg-muted/20 transition-colors"
                 >
-                  <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ idx + 1 }}</td>
+                  <td class="px-2 py-2.5 text-muted-foreground tabular-nums">
+                    <div class="flex items-center gap-1">
+                      <span class="w-4 text-center">{{ idx + 1 }}</span>
+                      <button
+                        class="opacity-0 group-hover/row:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+                        title="Duplicate row"
+                        @click="duplicateLineItem(section.key, idx)"
+                      >
+                        <Icon name="i-lucide-copy" class="size-3 text-muted-foreground" />
+                      </button>
+                    </div>
+                  </td>
                   <td
                     v-for="col in section.columns"
                     :key="col.key"
-                    class="px-3 py-2.5"
+                    class="p-0.5"
                     :class="{
-                      'text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400': col.key === 'total',
-                      'tabular-nums': col.type === 'currency' || col.type === 'number' || col.type === 'percent',
+                      'text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400 bg-muted/10': col.key === 'total',
                     }"
                   >
-                    <template v-if="col.type === 'currency' && col.key !== 'total'">
-                      {{ formatCurrency(item[col.key]) }}
+                    <template v-if="col.key === 'total'">
+                      <div class="px-2 py-1.5 tabular-nums">
+                        {{ formatCurrency(col.compute ? col.compute(item) : (item[col.key] || item.lineTotal)) }}
+                      </div>
                     </template>
-                    <template v-else-if="col.key === 'total'">
-                      {{ formatCurrency(item[col.key] || item.lineTotal) }}
+                    <template v-else-if="col.type === 'combobox'">
+                      <Input
+                        v-model="item[col.key]"
+                        :list="col.optionsKey"
+                        class="h-8 text-[11px] px-2 w-full bg-transparent border-transparent hover:border-input focus:border-input focus:bg-background rounded-sm shadow-none"
+                        :placeholder="col.label"
+                      />
+                    </template>
+                    <template v-else-if="col.type === 'currency'">
+                      <Input
+                        v-model.number="item[col.key]"
+                        type="number"
+                        step="any"
+                        class="h-8 text-[11px] px-2 w-full bg-transparent border-transparent hover:border-input focus:border-input focus:bg-background rounded-sm shadow-none tabular-nums text-right"
+                        :placeholder="col.label"
+                      />
                     </template>
                     <template v-else-if="col.type === 'percent'">
-                      {{ item[col.key] ? item[col.key] + '%' : '—' }}
+                      <div class="relative flex items-center">
+                        <Input
+                          v-model.number="item[col.key]"
+                          type="number"
+                          step="any"
+                          class="h-8 text-[11px] px-2 pr-4 w-full bg-transparent border-transparent hover:border-input focus:border-input focus:bg-background rounded-sm shadow-none tabular-nums text-right"
+                          :placeholder="col.label"
+                        />
+                        <span class="absolute right-2 text-muted-foreground text-[10px] pointer-events-none">%</span>
+                      </div>
+                    </template>
+                    <template v-else-if="col.type === 'number'">
+                      <Input
+                        v-model.number="item[col.key]"
+                        type="number"
+                        step="any"
+                        class="h-8 text-[11px] px-2 w-full bg-transparent border-transparent hover:border-input focus:border-input focus:bg-background rounded-sm shadow-none tabular-nums"
+                        :placeholder="col.label"
+                      />
                     </template>
                     <template v-else>
-                      {{ item[col.key] ?? '—' }}
+                      <Input
+                        v-model="item[col.key]"
+                        class="h-8 text-[11px] px-2 w-full bg-transparent border-transparent hover:border-input focus:border-input focus:bg-background rounded-sm shadow-none"
+                        :placeholder="col.label"
+                      />
                     </template>
                   </td>
                 </tr>
@@ -384,5 +575,16 @@ function getTabCount(key: string): number {
         </div>
       </div>
     </div>
+
+    <!-- Datalists for quick edit autocomplete -->
+    <datalist id="miscNames">
+      <option v-for="opt in options.miscNames" :key="opt" :value="opt" />
+    </datalist>
+    <datalist id="miscClassifications">
+      <option v-for="opt in options.miscClassifications" :key="opt" :value="opt" />
+    </datalist>
+    <datalist id="uoms">
+      <option v-for="opt in options.uoms" :key="opt" :value="opt" />
+    </datalist>
   </div>
 </template>

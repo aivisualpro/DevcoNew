@@ -6,17 +6,24 @@ import { useMongoClient } from '../../utils/mongodb'
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
  */
 function sanitizeForFirestore(value: any): any {
-  if (value === null || value === undefined) return null
-  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function')) return value.toString()
-  if (value instanceof Date) return value.toISOString()
-  if (Buffer.isBuffer(value)) return value.toString('base64')
-  if (Array.isArray(value)) return value.map(sanitizeForFirestore)
+  if (value === null || value === undefined)
+    return null
+  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function'))
+    return value.toString()
+  if (value instanceof Date)
+    return value.toISOString()
+  if (Buffer.isBuffer(value))
+    return value.toString('base64')
+  if (Array.isArray(value))
+    return value.map(sanitizeForFirestore)
   if (typeof value === 'object' && value !== null) {
-    if (value.constructor && value.constructor !== Object) return value.toString()
+    if (value.constructor && value.constructor !== Object)
+      return value.toString()
     const result: Record<string, any> = {}
     for (const [k, v] of Object.entries(value)) {
       const sanitized = sanitizeForFirestore(v)
-      if (sanitized !== undefined) result[k] = sanitized
+      if (sanitized !== undefined)
+        result[k] = sanitized
     }
     return result
   }
@@ -59,7 +66,7 @@ export default defineEventHandler(async () => {
       for (const doc of existingSnapshot.docs) {
         const data = doc.data()
         if (data.legacy_id) {
-            legacyIdToDocId.set(data.legacy_id, doc.id)
+          legacyIdToDocId.set(data.legacy_id, doc.id)
         }
       }
     }
@@ -85,15 +92,16 @@ export default defineEventHandler(async () => {
         // Determine Doc ID: Use existing if found, else auto-generate
         let docRef
         const existingDocId = legacyIdToDocId.get(legacyId)
-        
+
         if (existingDocId) {
-            docRef = firestoreCollection.doc(existingDocId)
-            updated++
-        } else {
-            docRef = firestoreCollection.doc()
-            created++
+          docRef = firestoreCollection.doc(existingDocId)
+          updated++
         }
-        
+        else {
+          docRef = firestoreCollection.doc()
+          created++
+        }
+
         // Construct the payload with specific fields as requested
         const payload = {
           legacy_id: legacyId,
@@ -117,9 +125,9 @@ export default defineEventHandler(async () => {
     // Identify docs in Firestore whose legacy_id is no longer in MongoDB
     const orphanedDocIds: string[] = []
     for (const [legacyId, docId] of legacyIdToDocId) {
-        if (!processedLegacyIds.has(legacyId)) {
-            orphanedDocIds.push(docId)
-        }
+      if (!processedLegacyIds.has(legacyId)) {
+        orphanedDocIds.push(docId)
+      }
     }
 
     if (orphanedDocIds.length > 0) {

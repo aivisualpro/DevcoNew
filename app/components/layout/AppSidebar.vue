@@ -31,15 +31,44 @@ const teams: {
   },
 ]
 
-const user: {
-  name: string
-  email: string
-  avatar: string
-} = {
-  name: 'Adeel Jabbar',
-  email: 'adeel@aivisualpro.com',
-  avatar: '/avatars/adeel.png',
-}
+const userDataCookie = useCookie('userData')
+const user = computed(() => {
+  try {
+    const raw = userDataCookie.value
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (parsed && (parsed.firstName || parsed.name || parsed.email)) {
+      const firstName = parsed.firstName || ''
+      const lastName = parsed.lastName || ''
+      const fullName = (firstName && lastName) ? `${firstName} ${lastName}` : (parsed.name || firstName || 'User')
+      return {
+        name: fullName,
+        email: parsed.email || '',
+        avatar: parsed.profilePicture || parsed.profileImage || parsed.avatar || parsed.photo || '',
+        appRole: parsed.appRole || '',
+      }
+    }
+  }
+  catch {}
+  return {
+    name: 'Adeel Jabbar',
+    email: 'adeel@aivisualpro.com',
+    avatar: '/avatars/adeel.png',
+    appRole: 'Super Admin',
+  }
+})
+
+// Set browser favicon to user's profile image
+watch(user, (u) => {
+  if (u.avatar && import.meta.client) {
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'icon'
+      document.head.appendChild(link)
+    }
+    link.href = u.avatar
+  }
+}, { immediate: true })
 
 const { sidebar } = useAppSettings()
 </script>

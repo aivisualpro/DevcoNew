@@ -22,7 +22,8 @@ fetchAllTickets()
 
 // ─── Base items (scoped to estimate if provided) ───
 const baseItems = computed(() => {
-  if (!props.estimateNumber) return allTickets.value
+  if (!props.estimateNumber)
+    return allTickets.value
   return allTickets.value.filter(t => t.estimateNumber === props.estimateNumber)
 })
 
@@ -40,8 +41,12 @@ const search = ref('')
 const filteredItems = computed(() => {
   let items = baseItems.value
 
-  if (activeTab.value === 'net-30') items = items.filter(t => (t.billingTerms || '').toLowerCase().includes('net 30'))
-  else if (activeTab.value === 'net-60') items = items.filter(t => (t.billingTerms || '').toLowerCase().includes('net 60'))
+  if (activeTab.value === 'net-30') {
+    items = items.filter(t => (t.billingTerms || '').toLowerCase().includes('net 30'))
+  }
+  else if (activeTab.value === 'net-60') {
+    items = items.filter(t => (t.billingTerms || '').toLowerCase().includes('net 60'))
+  }
   else if (activeTab.value === 'other') {
     items = items.filter((t) => {
       const bt = (t.billingTerms || '').toLowerCase()
@@ -74,7 +79,8 @@ const sortDir = ref<SortDir>('desc')
 function toggleSort(key: string) {
   if (sortKey.value === key) {
     sortDir.value = sortDir.value === 'desc' ? 'asc' : sortDir.value === 'asc' ? null : 'desc'
-    if (sortDir.value === null) sortKey.value = ''
+    if (sortDir.value === null)
+      sortKey.value = ''
   }
   else {
     sortKey.value = key
@@ -83,7 +89,8 @@ function toggleSort(key: string) {
 }
 
 const sortedItems = computed(() => {
-  if (!sortKey.value || !sortDir.value) return filteredItems.value
+  if (!sortKey.value || !sortDir.value)
+    return filteredItems.value
   const items = [...filteredItems.value]
   const key = sortKey.value
   const dir = sortDir.value
@@ -91,17 +98,24 @@ const sortedItems = computed(() => {
   items.sort((a, b) => {
     const av = a[key]
     const bv = b[key]
-    if (av == null && bv == null) return 0
-    if (av == null) return 1
-    if (bv == null) return -1
+    if (av == null && bv == null)
+      return 0
+    if (av == null)
+      return 1
+    if (bv == null)
+      return -1
 
     let result = 0
-    if (key === 'createdAt' || key === 'date') result = new Date(av).getTime() - new Date(bv).getTime()
+    if (key === 'createdAt' || key === 'date') {
+      result = new Date(av).getTime() - new Date(bv).getTime()
+    }
     else if (key === 'lumpSum') {
-      const parseVal = (v: any) => parseFloat(String(v).replace(/[^0-9.-]/g, '')) || 0
+      const parseVal = (v: any) => Number.parseFloat(String(v).replace(/[^0-9.-]/g, '')) || 0
       result = parseVal(av) - parseVal(bv)
     }
-    else result = String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' })
+    else {
+      result = String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' })
+    }
     return dir === 'asc' ? result : -result
   })
   return items
@@ -117,17 +131,22 @@ watch([activeTab, search], () => { displayCount.value = PAGE_SIZE })
 
 // ─── Tab counts ───
 function getTabCount(key: string): number {
-  if (!isFetched.value) return 0
-  if (key === 'all') return baseItems.value.length
-  if (key === 'net-30') return baseItems.value.filter(t => (t.billingTerms || '').toLowerCase().includes('net 30')).length
-  if (key === 'net-60') return baseItems.value.filter(t => (t.billingTerms || '').toLowerCase().includes('net 60')).length
-  if (key === 'other') return baseItems.value.filter((t) => { const bt = (t.billingTerms || '').toLowerCase(); return bt && !bt.includes('net 30') && !bt.includes('net 60') }).length
+  if (!isFetched.value)
+    return 0
+  if (key === 'all')
+    return baseItems.value.length
+  if (key === 'net-30')
+    return baseItems.value.filter(t => (t.billingTerms || '').toLowerCase().includes('net 30')).length
+  if (key === 'net-60')
+    return baseItems.value.filter(t => (t.billingTerms || '').toLowerCase().includes('net 60')).length
+  if (key === 'other')
+    return baseItems.value.filter((t) => { const bt = (t.billingTerms || '').toLowerCase(); return bt && !bt.includes('net 30') && !bt.includes('net 60') }).length
   return 0
 }
 
 // ─── Stats ───
 const totalAmount = computed(() => filteredItems.value.reduce((sum, t) => {
-  return sum + (parseFloat(String(t.lumpSum || '0').replace(/[^0-9.-]/g, '')) || 0)
+  return sum + (Number.parseFloat(String(t.lumpSum || '0').replace(/[^0-9.-]/g, '')) || 0)
 }, 0))
 
 // ─── Formatters ───
@@ -136,11 +155,12 @@ function formatCurrency(value: number): string {
 }
 
 function parseLumpSum(value: string): number {
-  return parseFloat(String(value || '0').replace(/[^0-9.-]/g, '')) || 0
+  return Number.parseFloat(String(value || '0').replace(/[^0-9.-]/g, '')) || 0
 }
 
 function getInitials(name: string): string {
-  if (!name) return '??'
+  if (!name)
+    return '??'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
@@ -165,9 +185,13 @@ async function handleRefresh() {
 // ─── Scroll ───
 const scrollSentinel = ref<HTMLElement | null>(null)
 onMounted(() => {
-  if (!scrollSentinel.value) return
+  if (!scrollSentinel.value)
+    return
   const observer = new IntersectionObserver(
-    (entries) => { if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) loadMore() },
+    (entries) => {
+      if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value)
+        loadMore()
+    },
     { threshold: 0.1 },
   )
   observer.observe(scrollSentinel.value)
@@ -242,10 +266,16 @@ onMounted(() => {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load billing tickets</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load billing tickets
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
-      <Button variant="outline" size="sm" @click="handleRefresh">Retry</Button>
+      <Button variant="outline" size="sm" @click="handleRefresh">
+        Retry
+      </Button>
     </div>
 
     <!-- Table -->
@@ -253,7 +283,9 @@ onMounted(() => {
       <table class="w-full text-[11px]">
         <thead class="sticky top-0 z-10 bg-background border-b">
           <tr>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">#</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">
+              #
+            </th>
             <th class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none" @click="toggleSort('date')">
               <div class="flex items-center gap-1">
                 Date
@@ -266,17 +298,27 @@ onMounted(() => {
                 <Icon v-if="sortKey === 'estimateNumber'" :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3 text-primary" />
               </div>
             </th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Client</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">File Name</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Billing Terms</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Client
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              File Name
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Billing Terms
+            </th>
             <th class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none" @click="toggleSort('lumpSum')">
               <div class="flex items-center gap-1">
                 Lump Sum
                 <Icon v-if="sortKey === 'lumpSum'" :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3 text-primary" />
               </div>
             </th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Created By</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Items</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Created By
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Items
+            </th>
             <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8" />
           </tr>
         </thead>
@@ -285,7 +327,9 @@ onMounted(() => {
             <td :colspan="10" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-                <p class="text-sm">Loading billing tickets...</p>
+                <p class="text-sm">
+                  Loading billing tickets...
+                </p>
               </div>
             </td>
           </tr>
@@ -296,7 +340,9 @@ onMounted(() => {
                 <div class="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Icon name="i-lucide-receipt" class="size-8 text-muted-foreground/50" />
                 </div>
-                <h3 class="text-lg font-bold">No Billing Tickets</h3>
+                <h3 class="text-lg font-bold">
+                  No Billing Tickets
+                </h3>
                 <p class="text-sm text-muted-foreground max-w-xs mt-1">
                   {{ search ? 'No tickets match your search.' : estimateNumber ? 'No billing tickets for this estimate.' : 'No billing ticket records found.' }}
                 </p>
@@ -310,14 +356,28 @@ onMounted(() => {
 
           <template v-for="(ticket, index) in displayedItems" :key="ticket.id">
             <tr class="hover:bg-muted/30 transition-colors cursor-pointer" :class="{ 'bg-muted/20': expandedId === ticket.id }" @click="toggleExpand(ticket.id)">
-              <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ index + 1 }}</td>
-              <td class="px-3 py-2.5 whitespace-nowrap tabular-nums font-medium">{{ ticket.date || '—' }}</td>
+              <td class="px-3 py-2.5 text-muted-foreground tabular-nums">
+                {{ index + 1 }}
+              </td>
+              <td class="px-3 py-2.5 whitespace-nowrap tabular-nums font-medium">
+                {{ ticket.date || '—' }}
+              </td>
               <td v-if="!estimateNumber" class="px-3 py-2.5 whitespace-nowrap">
-                <Badge v-if="ticket.estimateNumber" variant="outline" class="text-[10px] font-bold tabular-nums">{{ ticket.estimateNumber }}</Badge>
+                <Badge v-if="ticket.estimateNumber" variant="outline" class="text-[10px] font-bold tabular-nums">
+                  {{ ticket.estimateNumber }}
+                </Badge>
                 <span v-else class="text-muted-foreground">—</span>
               </td>
-              <td class="px-3 py-2.5 max-w-[140px]"><p class="truncate" :title="ticket.customerName">{{ ticket.customerName || '—' }}</p></td>
-              <td class="px-3 py-2.5 max-w-[160px]"><p class="truncate font-medium" :title="ticket.fileName">{{ ticket.fileName || '—' }}</p></td>
+              <td class="px-3 py-2.5 max-w-[140px]">
+                <p class="truncate" :title="ticket.customerName">
+                  {{ ticket.customerName || '—' }}
+                </p>
+              </td>
+              <td class="px-3 py-2.5 max-w-[160px]">
+                <p class="truncate font-medium" :title="ticket.fileName">
+                  {{ ticket.fileName || '—' }}
+                </p>
+              </td>
               <td class="px-3 py-2.5 whitespace-nowrap">
                 <Badge
                   v-if="ticket.billingTerms" variant="secondary" class="text-[9px]"
@@ -326,7 +386,9 @@ onMounted(() => {
                     'bg-amber-500/10 text-amber-600 border-amber-500/20': ticket.billingTerms.toLowerCase().includes('net 60'),
                     'bg-teal-500/10 text-teal-600 border-teal-500/20': !ticket.billingTerms.toLowerCase().includes('net 30') && !ticket.billingTerms.toLowerCase().includes('net 60'),
                   }"
-                >{{ ticket.billingTerms }}</Badge>
+                >
+                  {{ ticket.billingTerms }}
+                </Badge>
                 <span v-else class="text-muted-foreground">—</span>
               </td>
               <td class="px-3 py-2.5 whitespace-nowrap tabular-nums">
@@ -336,7 +398,9 @@ onMounted(() => {
                 <div v-if="ticket.createdByName" class="flex items-center gap-1.5">
                   <Avatar class="size-5 border">
                     <AvatarImage v-if="ticket.createdByAvatar" :src="ticket.createdByAvatar" />
-                    <AvatarFallback class="text-[7px]">{{ getInitials(ticket.createdByName) }}</AvatarFallback>
+                    <AvatarFallback class="text-[7px]">
+                      {{ getInitials(ticket.createdByName) }}
+                    </AvatarFallback>
                   </Avatar>
                   <span class="text-[10px] font-medium truncate max-w-[90px]">{{ ticket.createdByName }}</span>
                 </div>
@@ -368,10 +432,22 @@ onMounted(() => {
                         <Icon name="i-lucide-receipt" class="size-3.5 text-blue-500" /> Billing Details
                       </h4>
                       <div class="grid gap-2 text-[11px]">
-                        <div class="flex justify-between items-center"><span class="text-muted-foreground">Estimate</span><Badge variant="outline" class="text-[10px] font-bold tabular-nums">{{ ticket.estimateNumber || '—' }}</Badge></div>
-                        <div class="flex justify-between items-center"><span class="text-muted-foreground">Ticket Date</span><span class="font-medium">{{ ticket.date || '—' }}</span></div>
-                        <div class="flex justify-between items-center"><span class="text-muted-foreground">Billing Terms</span><Badge variant="secondary" class="text-[9px]">{{ ticket.billingTerms || '—' }}</Badge></div>
-                        <div v-if="ticket.otherBillingTerms" class="flex justify-between items-center"><span class="text-muted-foreground">Other Terms</span><span class="font-medium">{{ ticket.otherBillingTerms }}</span></div>
+                        <div class="flex justify-between items-center">
+                          <span class="text-muted-foreground">Estimate</span><Badge variant="outline" class="text-[10px] font-bold tabular-nums">
+                            {{ ticket.estimateNumber || '—' }}
+                          </Badge>
+                        </div>
+                        <div class="flex justify-between items-center">
+                          <span class="text-muted-foreground">Ticket Date</span><span class="font-medium">{{ ticket.date || '—' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                          <span class="text-muted-foreground">Billing Terms</span><Badge variant="secondary" class="text-[9px]">
+                            {{ ticket.billingTerms || '—' }}
+                          </Badge>
+                        </div>
+                        <div v-if="ticket.otherBillingTerms" class="flex justify-between items-center">
+                          <span class="text-muted-foreground">Other Terms</span><span class="font-medium">{{ ticket.otherBillingTerms }}</span>
+                        </div>
                         <div class="flex justify-between items-center pt-2 border-t mt-1">
                           <span class="font-bold text-muted-foreground uppercase tracking-wider">Lump Sum</span>
                           <span class="text-base font-bold text-emerald-600">{{ ticket.lumpSum || '—' }}</span>
@@ -381,8 +457,12 @@ onMounted(() => {
                         <div class="flex items-center gap-2">
                           <Icon name="i-lucide-building" class="size-3.5 text-muted-foreground" />
                           <div>
-                            <p class="text-[10px] font-semibold">{{ ticket.customerName }}</p>
-                            <p class="text-[9px] text-muted-foreground">Client</p>
+                            <p class="text-[10px] font-semibold">
+                              {{ ticket.customerName }}
+                            </p>
+                            <p class="text-[9px] text-muted-foreground">
+                              Client
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -396,10 +476,16 @@ onMounted(() => {
                       </h4>
                       <div class="space-y-3 max-h-[300px] overflow-auto">
                         <div v-for="(td, ti) in ticket.titleDescriptions" :key="ti" class="rounded-md border bg-muted/20 p-3">
-                          <h5 v-if="td.title" class="text-[10px] font-bold mb-1">{{ td.title }}</h5>
-                          <p class="text-[10px] text-foreground/80 whitespace-pre-line leading-relaxed">{{ td.description || 'No description' }}</p>
+                          <h5 v-if="td.title" class="text-[10px] font-bold mb-1">
+                            {{ td.title }}
+                          </h5>
+                          <p class="text-[10px] text-foreground/80 whitespace-pre-line leading-relaxed">
+                            {{ td.description || 'No description' }}
+                          </p>
                         </div>
-                        <p v-if="!ticket.titleDescriptions || ticket.titleDescriptions.length === 0" class="text-xs text-muted-foreground italic">No descriptions provided</p>
+                        <p v-if="!ticket.titleDescriptions || ticket.titleDescriptions.length === 0" class="text-xs text-muted-foreground italic">
+                          No descriptions provided
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -35,7 +35,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error: any) {
-    if (error.statusCode) throw error
+    if (error.statusCode)
+      throw error
     console.error('[Estimate GET Error]', error)
     throw createError({
       statusCode: 500,

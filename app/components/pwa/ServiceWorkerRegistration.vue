@@ -5,7 +5,8 @@
 const swRegistration = ref<ServiceWorkerRegistration | null>(null)
 
 onMounted(async () => {
-  if (!('serviceWorker' in navigator)) return
+  if (!('serviceWorker' in navigator))
+    return
 
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', {
@@ -21,7 +22,8 @@ onMounted(async () => {
     // Listen for waiting service worker (new version available)
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing
-      if (!newWorker) return
+      if (!newWorker)
+        return
 
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'activated') {
@@ -33,7 +35,7 @@ onMounted(async () => {
 
     // registered
   }
-  catch (error) {
+  catch {
     // registration failed silently
   }
 })

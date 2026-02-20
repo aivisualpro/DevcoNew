@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { X, Download, Smartphone } from 'lucide-vue-next'
+import { Download, Smartphone, X } from 'lucide-vue-next'
 
 const deferredPrompt = ref<any>(null)
 const showBanner = ref(false)
@@ -15,7 +15,8 @@ if (import.meta.client) {
 // Listen for the beforeinstallprompt event
 onMounted(() => {
   // Don't show if already installed or previously dismissed this session
-  if (isInstalled.value) return
+  if (isInstalled.value)
+    return
 
   const dismissedAt = localStorage.getItem('pwa-install-dismissed')
   if (dismissedAt) {
@@ -45,7 +46,8 @@ onMounted(() => {
 })
 
 async function handleInstall() {
-  if (!deferredPrompt.value) return
+  if (!deferredPrompt.value)
+    return
 
   deferredPrompt.value.prompt()
   const { outcome } = await deferredPrompt.value.userChoice

@@ -27,8 +27,10 @@ export function useCarDropdowns() {
   const authToken = useCookie('authToken')
 
   async function fetchCarDropdowns(force = false) {
-    if (_carDropdownsFetched.value && !force) return
-    if (_carDropdownsFetching.value && !force) return
+    if (_carDropdownsFetched.value && !force)
+      return
+    if (_carDropdownsFetching.value && !force)
+      return
 
     _carDropdownsFetching.value = true
 
@@ -59,7 +61,8 @@ export function useCarDropdowns() {
   const makes = computed(() => {
     const set = new Set<string>()
     _carDropdowns.value.forEach((item) => {
-      if (item.make) set.add(item.make)
+      if (item.make)
+        set.add(item.make)
     })
     return Array.from(set).sort()
   })

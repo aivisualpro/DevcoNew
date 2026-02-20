@@ -12,6 +12,12 @@ const activeTab = computed(() => {
   return segments[3] || 'summary'
 })
 
+// Current tab label
+const activeTabLabel = computed(() => {
+  const tab = estimateDetailTabs.find(t => t.id === activeTab.value)
+  return tab ? tab.label : 'Summary'
+})
+
 // Fetch single estimate for header info
 const estimate = ref<any>(null)
 const isLoading = ref(false)
@@ -32,23 +38,52 @@ async function fetchEstimate() {
 
 onMounted(fetchEstimate)
 
-// Update header with back link + estimate info
-// Watch both estimate and route to re-set header after clearHeader() runs on tab changes
-watch([estimate, () => route.fullPath], () => {
-  if (estimate.value) {
-    setHeader({
-      title: estimate.value.estimate || 'Estimate Detail',
-      icon: 'i-lucide-file-spreadsheet',
-      backLink: { label: 'All Estimates', href: `/estimates/all?highlight=${estimateId.value}` },
-    })
-  }
-  else {
-    setHeader({
-      title: 'Estimate Detail',
-      icon: 'i-lucide-file-spreadsheet',
-      backLink: { label: 'All Estimates', href: `/estimates/all?highlight=${estimateId.value}` },
-    })
-  }
+// ─── Live Totals (reactive to line item changes) ───
+function sumItems(items: any[]): number {
+  if (!Array.isArray(items))
+    return 0
+  return items.reduce((sum, i) => sum + (Number(i.total) || Number(i.lineTotal) || 0), 0)
+}
+
+const liveSubTotal = computed(() => {
+  if (!estimate.value)
+    return 0
+  const est = estimate.value
+  const allArrays = [
+    est.laborItems || est.labor || [],
+    est.equipmentItems || est.equipment || [],
+    est.materialItems || est.material || est.materials || [],
+    est.toolsItems || est.tools || [],
+    est.overheadItems || est.overhead || [],
+    est.subcontractorItems || est.subcontractor || est.subcontractors || [],
+    est.disposalItems || est.disposal || [],
+    est.miscellaneousItems || est.miscellaneous || [],
+  ]
+  return allArrays.reduce((total, arr) => total + sumItems(arr), 0)
+})
+
+const liveGrandTotal = computed(() => {
+  if (!estimate.value)
+    return 0
+  const markup = Number(estimate.value.markup || estimate.value.markupPercent || 0)
+  const sub = liveSubTotal.value
+  return markup > 0 ? sub * (1 + markup / 100) : sub
+})
+
+// Update header with back link + estimate info + route name + live totals
+watch([estimate, () => route.fullPath, liveSubTotal, liveGrandTotal], () => {
+  const estimateNumber = estimate.value?.estimate || 'Estimate'
+  const title = `${activeTabLabel.value} — ${estimateNumber}`
+  setHeader({
+    title,
+    icon: 'i-lucide-file-spreadsheet',
+    backLink: { label: 'All Estimates', href: `/estimates/all?highlight=${estimateId.value}` },
+    extras: {
+      showTotals: true,
+      subtotal: liveSubTotal.value,
+      grandTotal: liveGrandTotal.value,
+    },
+  })
 }, { immediate: true })
 </script>
 
@@ -65,7 +100,7 @@ watch([estimate, () => route.fullPath], () => {
           :class="[
             activeTab === tab.id
               ? 'text-foreground'
-              : 'text-muted-foreground'
+              : 'text-muted-foreground',
           ]"
         >
           <Icon

@@ -20,9 +20,11 @@ const currentActiveId = computed(() => {
 const { allCars, isFetched } = useAuctionsApi()
 
 function getCount(filterKey: string) {
-  if (!isFetched.value) return null
+  if (!isFetched.value)
+    return null
   const filter = auctionRouteFilters[filterKey]
-  if (!filter) return 0
+  if (!filter)
+    return 0
   return allCars.value.filter(filter.filterFn).length
 }
 </script>

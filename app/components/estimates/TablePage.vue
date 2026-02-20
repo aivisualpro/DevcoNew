@@ -2,9 +2,6 @@
 import type { CrudColumn } from '~/composables/useCrud'
 import { toast } from 'vue-sonner'
 
-const route = useRoute()
-const router = useRouter()
-
 const props = defineProps<{
   title: string
   description: string
@@ -12,6 +9,8 @@ const props = defineProps<{
   columns: CrudColumn[]
   filterFn: (est: any) => boolean
 }>()
+const route = useRoute()
+const router = useRouter()
 
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, icon: props.icon })
@@ -68,51 +67,66 @@ const sortDir = ref<SortDir>('desc') // Default: newest estimate first
 function toggleSort(key: string) {
   if (sortKey.value === key) {
     // Cycle: desc -> asc -> null -> desc
-    if (sortDir.value === 'desc') sortDir.value = 'asc'
-    else if (sortDir.value === 'asc') { sortDir.value = null; sortKey.value = '' }
+    if (sortDir.value === 'desc') {
+      sortDir.value = 'asc'
+    }
+    else if (sortDir.value === 'asc') {
+      sortDir.value = null
+      sortKey.value = ''
+    }
     else { sortDir.value = 'desc'; sortKey.value = key }
-  } else {
+  }
+  else {
     sortKey.value = key
     sortDir.value = 'desc'
   }
 }
 
 function getSortIcon(key: string): string {
-  if (sortKey.value !== key || !sortDir.value) return 'i-lucide-arrow-up-down'
+  if (sortKey.value !== key || !sortDir.value)
+    return 'i-lucide-arrow-up-down'
   return sortDir.value === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'
 }
 
 function compare(a: any, b: any, key: string, dir: SortDir): number {
-  if (!dir) return 0
+  if (!dir)
+    return 0
   const av = a[key]
   const bv = b[key]
 
   // Handle nulls
-  if (av == null && bv == null) return 0
-  if (av == null) return 1
-  if (bv == null) return -1
+  if (av == null && bv == null)
+    return 0
+  if (av == null)
+    return 1
+  if (bv == null)
+    return -1
 
   let result = 0
 
   // Smart compare by type
   if (typeof av === 'number' && typeof bv === 'number') {
     result = av - bv
-  } else if (key === 'date' || key === 'createdAt') {
+  }
+  else if (key === 'date' || key === 'createdAt') {
     result = new Date(av).getTime() - new Date(bv).getTime()
-  } else if (key === 'estimate') {
+  }
+  else if (key === 'estimate') {
     // Compare estimate numbers like "26-0117" → split by dash, compare year first then sequence
     const partsA = String(av).split('-')
     const partsB = String(bv).split('-')
-    const yearA = parseInt(partsA[0] || '0', 10)
-    const yearB = parseInt(partsB[0] || '0', 10)
+    const yearA = Number.parseInt(partsA[0] || '0', 10)
+    const yearB = Number.parseInt(partsB[0] || '0', 10)
     if (yearA !== yearB) {
       result = yearA - yearB
-    } else {
-      const seqA = parseInt(partsA[1] || '0', 10)
-      const seqB = parseInt(partsB[1] || '0', 10)
+    }
+    else {
+      const seqA = Number.parseInt(partsA[1] || '0', 10)
+      const seqB = Number.parseInt(partsB[1] || '0', 10)
       result = seqA - seqB
     }
-  } else {
+  }
+  else {
     result = String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' })
   }
 
@@ -129,9 +143,10 @@ const filteredItems = computed(() => {
   if (search.value) {
     const q = search.value.toLowerCase()
     result = result.filter(item =>
-      ['estimate', 'projectName', 'contactName', 'customerName', 'proposalWriter', 'status', 'services'].some(key => {
+      ['estimate', 'projectName', 'contactName', 'customerName', 'proposalWriter', 'status', 'services'].some((key) => {
         const val = item[key]
-        if (Array.isArray(val)) return val.some((v: any) => String(v).toLowerCase().includes(q))
+        if (Array.isArray(val))
+          return val.some((v: any) => String(v).toLowerCase().includes(q))
         return String(val ?? '').toLowerCase().includes(q)
       }),
     )
@@ -172,7 +187,8 @@ function loadMore() {
 // Scroll handler for infinite loading
 function handleScroll(e: Event) {
   const target = e.target as HTMLElement
-  if (!target) return
+  if (!target)
+    return
   const threshold = 200
   if (target.scrollHeight - target.scrollTop - target.clientHeight < threshold) {
     loadMore()
@@ -181,23 +197,33 @@ function handleScroll(e: Event) {
 
 // ─── Formatters ───
 const badgeClasses: Record<string, string> = {
-  'Pending': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  'Completed': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  'Won': 'bg-green-600/10 text-green-600 border-green-600/20',
-  'Lost': 'bg-red-500/10 text-red-600 border-red-500/20',
+  Pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  Completed: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  Won: 'bg-green-600/10 text-green-600 border-green-600/20',
+  Lost: 'bg-red-500/10 text-red-600 border-red-500/20',
 }
 
 function getBadgeClass(value: string): string {
   return badgeClasses[value] || 'bg-gray-500/10 text-gray-600 border-gray-500/20'
 }
 
+function abbreviate(text: string): string {
+  return text
+    .split(/[\s\-–—/]+/)
+    .filter(w => w.length > 0)
+    .map(w => w[0].toUpperCase())
+    .join('')
+}
+
 function formatCurrency(value: any): string {
-  if (value === null || value === undefined) return '—'
+  if (value === null || value === undefined)
+    return '—'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value))
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
@@ -206,14 +232,16 @@ function formatDate(value: string): string {
 
 async function handleRefresh() {
   await refreshEstimates()
-  
+
   if (syncResult.value?.success && syncResult.value.stats) {
     const s = syncResult.value.stats
     const dur = (s.duration / 1000).toFixed(1)
     toast.success(`Synced ${s.total} estimates — ${s.created} new, ${s.updated} updated, ${s.removed} removed in ${dur}s`)
-  } else if (syncResult.value && !syncResult.value.success) {
+  }
+  else if (syncResult.value && !syncResult.value.success) {
     toast.error(`Sync failed: ${syncResult.value.message}`)
-  } else {
+  }
+  else {
     toast.success('Estimates refreshed')
   }
 }
@@ -241,13 +269,17 @@ async function handleRefresh() {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load estimates</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load estimates
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
-      <Button variant="outline" size="sm" @click="handleRefresh">Retry</Button>
+      <Button variant="outline" size="sm" @click="handleRefresh">
+        Retry
+      </Button>
     </div>
-
-
 
     <!-- Table -->
     <div v-if="!fetchError" ref="scrollContainerRef" class="flex-1 min-h-0 overflow-auto" @scroll="handleScroll">
@@ -278,12 +310,11 @@ async function handleRefresh() {
             :data-estimate-id="item.id || item._id"
             class="group hover:bg-muted/50 transition-all cursor-pointer"
             :class="{
-              'ring-2 ring-primary/60 bg-primary/5 animate-highlight-fade': highlightId === (item.id || item._id)
+              'ring-2 ring-primary/60 bg-primary/5 animate-highlight-fade': highlightId === (item.id || item._id),
             }"
             @click="navigateTo(`/estimates/${item.id || item._id}/summary`)"
           >
             <TableCell v-for="col in columns" :key="col.key">
-              
               <!-- Avatar -->
               <div v-if="col.type === 'avatar'" class="flex items-center gap-3">
                 <Avatar class="size-8 border">
@@ -298,19 +329,19 @@ async function handleRefresh() {
               <!-- Avatar Only -->
               <div v-else-if="col.type === 'avatar-only'" class="flex justify-center">
                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger as-child>
-                             <Avatar class="size-8 border cursor-help">
-                                <AvatarImage :src="item.proposalWriterAvatar" :alt="item[col.key]" />
-                                <AvatarFallback class="text-[8px]">
-                                    {{ String(item[col.key] || '??').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) }}
-                                </AvatarFallback>
-                            </Avatar>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{{ item[col.key] || 'Unknown' }}</p>
-                        </TooltipContent>
-                    </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Avatar class="size-8 border cursor-help">
+                        <AvatarImage :src="item.proposalWriterAvatar" :alt="item[col.key]" />
+                        <AvatarFallback class="text-[8px]">
+                          {{ String(item[col.key] || '??').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) }}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{{ item[col.key] || 'Unknown' }}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </TooltipProvider>
               </div>
 
@@ -326,30 +357,34 @@ async function handleRefresh() {
 
               <!-- Percent -->
               <span v-else-if="col.type === 'percent'" class="tabular-nums text-[10px]">
-                {{ item[col.key] ? String(item[col.key]).replace('%', '') + '%' : '—' }}
+                {{ item[col.key] ? `${String(item[col.key]).replace('%', '')}%` : '—' }}
               </span>
 
               <!-- Boolean -->
               <div v-else-if="col.type === 'boolean'" class="flex items-center">
-                 <Icon v-if="item[col.key]" name="i-lucide-check" class="size-4 text-emerald-500" />
-                 <span v-else class="text-muted-foreground">—</span>
+                <Icon v-if="item[col.key]" name="i-lucide-check" class="size-4 text-emerald-500" />
+                <span v-else class="text-muted-foreground">—</span>
               </div>
-              
+
               <!-- Date -->
               <span v-else-if="col.type === 'date'" class="text-muted-foreground text-[10px]">
                 {{ formatDate(item[col.key]) }}
               </span>
 
               <!-- Tags (Services) -->
-              <div v-else-if="col.type === 'tags'" class="flex flex-wrap gap-1">
-                 <Badge v-for="tag in (item[col.key] || [])" :key="tag" variant="secondary" class="text-xs font-normal bg-muted text-muted-foreground border-transparent">
-                   {{ tag }}
-                 </Badge>
+              <div v-else-if="col.type === 'tags'" class="flex flex-nowrap gap-1 overflow-hidden">
+                <Tooltip v-for="tag in (item[col.key] || [])" :key="tag">
+                  <TooltipTrigger as-child>
+                    <Badge variant="secondary" class="text-[10px] font-semibold bg-muted text-muted-foreground border-transparent whitespace-nowrap shrink-0 px-1.5 py-0 h-5 cursor-default">
+                      {{ abbreviate(tag) }}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ tag }}</TooltipContent>
+                </Tooltip>
               </div>
 
               <!-- Default -->
               <span v-else class="text-[10px]">{{ item[col.key] || '—' }}</span>
-            
             </TableCell>
           </TableRow>
           <!-- Loading rows -->
@@ -357,11 +392,13 @@ async function handleRefresh() {
             <TableCell :colspan="columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-                <p class="text-sm">Loading estimates...</p>
+                <p class="text-sm">
+                  Loading estimates...
+                </p>
               </div>
             </TableCell>
           </TableRow>
-           <TableRow v-else-if="visibleItems.length === 0">
+          <TableRow v-else-if="visibleItems.length === 0">
             <TableCell :colspan="columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />

@@ -23,7 +23,8 @@ fetchAllDjt()
 
 // ─── Base items (scoped to estimate if provided) ───
 const baseItems = computed(() => {
-  if (!props.estimateNumber) return allDjt.value
+  if (!props.estimateNumber)
+    return allDjt.value
   return allDjt.value.filter(d => d.estimate === props.estimateNumber)
 })
 
@@ -73,7 +74,8 @@ const sortDir = ref<SortDir>('desc')
 function toggleSort(key: string) {
   if (sortKey.value === key) {
     sortDir.value = sortDir.value === 'desc' ? 'asc' : sortDir.value === 'asc' ? null : 'desc'
-    if (sortDir.value === null) sortKey.value = ''
+    if (sortDir.value === null)
+      sortKey.value = ''
   }
   else {
     sortKey.value = key
@@ -82,7 +84,8 @@ function toggleSort(key: string) {
 }
 
 const sortedItems = computed(() => {
-  if (!sortKey.value || !sortDir.value) return filteredItems.value
+  if (!sortKey.value || !sortDir.value)
+    return filteredItems.value
   const items = [...filteredItems.value]
   const key = sortKey.value
   const dir = sortDir.value
@@ -90,9 +93,12 @@ const sortedItems = computed(() => {
   items.sort((a, b) => {
     const av = a[key]
     const bv = b[key]
-    if (av == null && bv == null) return 0
-    if (av == null) return 1
-    if (bv == null) return -1
+    if (av == null && bv == null)
+      return 0
+    if (av == null)
+      return 1
+    if (bv == null)
+      return -1
 
     let result = 0
     if (key === 'createdAt' || key === 'fromDate') {
@@ -119,10 +125,14 @@ watch([activeTab, search], () => { displayCount.value = PAGE_SIZE })
 
 // ─── Tab counts ───
 function getTabCount(key: string): number {
-  if (!isFetched.value) return 0
-  if (key === 'all') return baseItems.value.length
-  if (key === 'missing-customer-sign') return baseItems.value.filter(d => !d.hasCustomerSignature).length
-  if (key === 'missing-assignee-sign') return baseItems.value.filter(d => !d.hasAllAssigneeSigns).length
+  if (!isFetched.value)
+    return 0
+  if (key === 'all')
+    return baseItems.value.length
+  if (key === 'missing-customer-sign')
+    return baseItems.value.filter(d => !d.hasCustomerSignature).length
+  if (key === 'missing-assignee-sign')
+    return baseItems.value.filter(d => !d.hasAllAssigneeSigns).length
   return 0
 }
 
@@ -131,7 +141,8 @@ const totalCost = computed(() => filteredItems.value.reduce((sum, d) => sum + (d
 
 // ─── Formatters ───
 function formatDate(dateStr: string): string {
-  if (!dateStr) return '—'
+  if (!dateStr)
+    return '—'
   try {
     if (dateStr.includes('T')) {
       const datePart = dateStr.split('T')[0] || ''
@@ -148,13 +159,15 @@ function formatCurrency(value: number): string {
 }
 
 function getInitials(name: string): string {
-  if (!name) return '??'
+  if (!name)
+    return '??'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
 function truncateText(text: string, maxLen: number): string {
-  if (!text) return '—'
-  return text.length > maxLen ? text.slice(0, maxLen) + '…' : text
+  if (!text)
+    return '—'
+  return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text
 }
 
 // ─── Expandable rows ───
@@ -178,10 +191,12 @@ async function handleRefresh() {
 // ─── Scroll observer ───
 const scrollSentinel = ref<HTMLElement | null>(null)
 onMounted(() => {
-  if (!scrollSentinel.value) return
+  if (!scrollSentinel.value)
+    return
   const observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) loadMore()
+      if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value)
+        loadMore()
     },
     { threshold: 0.1 },
   )
@@ -237,7 +252,7 @@ onMounted(() => {
             :class="[
               activeTab === tab.key
                 ? 'text-foreground bg-background border border-b-0 border-border'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
             ]"
             @click="activeTab = tab.key"
           >
@@ -269,10 +284,16 @@ onMounted(() => {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load DJT records</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load DJT records
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
-      <Button variant="outline" size="sm" @click="handleRefresh">Retry</Button>
+      <Button variant="outline" size="sm" @click="handleRefresh">
+        Retry
+      </Button>
     </div>
 
     <!-- Main content -->
@@ -280,7 +301,9 @@ onMounted(() => {
       <table class="w-full text-[11px]">
         <thead class="sticky top-0 z-10 bg-background border-b">
           <tr>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">#</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">
+              #
+            </th>
             <th
               class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
               @click="toggleSort('createdAt')"
@@ -299,9 +322,15 @@ onMounted(() => {
                 <Icon v-if="sortKey === 'scheduleTitle'" :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3 text-primary" />
               </div>
             </th>
-            <th v-if="!estimateNumber" class="px-3 py-2 text-left font-medium text-muted-foreground">Estimate</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Client</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
+            <th v-if="!estimateNumber" class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Estimate
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Client
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Description
+            </th>
             <th
               class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
               @click="toggleSort('djtCost')"
@@ -311,7 +340,9 @@ onMounted(() => {
                 <Icon v-if="sortKey === 'djtCost'" :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3 text-primary" />
               </div>
             </th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Created By</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Created By
+            </th>
             <th
               class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
               @click="toggleSort('signatureCount')"
@@ -321,8 +352,12 @@ onMounted(() => {
                 <Icon v-if="sortKey === 'signatureCount'" :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3 text-primary" />
               </div>
             </th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Customer Sign</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Extras</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Customer Sign
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Extras
+            </th>
             <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8" />
           </tr>
         </thead>
@@ -332,7 +367,9 @@ onMounted(() => {
             <td :colspan="12" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-                <p class="text-sm">Loading DJT records...</p>
+                <p class="text-sm">
+                  Loading DJT records...
+                </p>
               </div>
             </td>
           </tr>
@@ -344,7 +381,9 @@ onMounted(() => {
                 <div class="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Icon name="i-lucide-clipboard-x" class="size-8 text-muted-foreground/50" />
                 </div>
-                <h3 class="text-lg font-bold">No Daily Job Tickets</h3>
+                <h3 class="text-lg font-bold">
+                  No Daily Job Tickets
+                </h3>
                 <p class="text-sm text-muted-foreground max-w-xs mt-1">
                   {{ search ? 'No tickets match your search.' : estimateNumber ? 'No DJT records for this estimate.' : 'No DJT records found.' }}
                 </p>
@@ -363,21 +402,35 @@ onMounted(() => {
               :class="{ 'bg-muted/20': expandedId === djt.id }"
               @click="toggleExpand(djt.id)"
             >
-              <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ index + 1 }}</td>
-              <td class="px-3 py-2.5 whitespace-nowrap tabular-nums font-medium">{{ formatDate(djt.createdAt || djt.fromDate) }}</td>
+              <td class="px-3 py-2.5 text-muted-foreground tabular-nums">
+                {{ index + 1 }}
+              </td>
+              <td class="px-3 py-2.5 whitespace-nowrap tabular-nums font-medium">
+                {{ formatDate(djt.createdAt || djt.fromDate) }}
+              </td>
               <td class="px-3 py-2.5 max-w-[200px]">
-                <p class="font-medium truncate" :title="djt.scheduleTitle">{{ djt.scheduleTitle || '—' }}</p>
-                <p v-if="djt.service" class="text-[9px] text-muted-foreground">{{ djt.service }}</p>
+                <p class="font-medium truncate" :title="djt.scheduleTitle">
+                  {{ djt.scheduleTitle || '—' }}
+                </p>
+                <p v-if="djt.service" class="text-[9px] text-muted-foreground">
+                  {{ djt.service }}
+                </p>
               </td>
               <td v-if="!estimateNumber" class="px-3 py-2.5 whitespace-nowrap">
-                <Badge v-if="djt.estimate" variant="outline" class="text-[10px] font-bold tabular-nums">{{ djt.estimate }}</Badge>
+                <Badge v-if="djt.estimate" variant="outline" class="text-[10px] font-bold tabular-nums">
+                  {{ djt.estimate }}
+                </Badge>
                 <span v-else class="text-muted-foreground">—</span>
               </td>
               <td class="px-3 py-2.5 max-w-[140px]">
-                <p class="truncate" :title="djt.customerName">{{ djt.customerName || '—' }}</p>
+                <p class="truncate" :title="djt.customerName">
+                  {{ djt.customerName || '—' }}
+                </p>
               </td>
               <td class="px-3 py-2.5 max-w-[220px]">
-                <p class="text-muted-foreground truncate" :title="djt.dailyJobDescription">{{ truncateText(djt.dailyJobDescription, 60) }}</p>
+                <p class="text-muted-foreground truncate" :title="djt.dailyJobDescription">
+                  {{ truncateText(djt.dailyJobDescription, 60) }}
+                </p>
               </td>
               <td class="px-3 py-2.5 whitespace-nowrap tabular-nums">
                 <span class="font-bold" :class="djt.djtCost > 0 ? 'text-emerald-600' : 'text-muted-foreground'">
@@ -388,7 +441,9 @@ onMounted(() => {
                 <div v-if="djt.createdByName" class="flex items-center gap-1.5">
                   <Avatar class="size-5 border">
                     <AvatarImage v-if="djt.createdByAvatar" :src="djt.createdByAvatar" />
-                    <AvatarFallback class="text-[7px]">{{ getInitials(djt.createdByName) }}</AvatarFallback>
+                    <AvatarFallback class="text-[7px]">
+                      {{ getInitials(djt.createdByName) }}
+                    </AvatarFallback>
                   </Avatar>
                   <span class="text-[10px] font-medium truncate max-w-[90px]">{{ djt.createdByName }}</span>
                 </div>
@@ -461,17 +516,23 @@ onMounted(() => {
                         <div class="flex items-center gap-2 p-2 rounded-md bg-emerald-500/5 border border-emerald-500/20">
                           <Icon name="i-lucide-check-circle-2" class="size-4 text-emerald-500 shrink-0" />
                           <div>
-                            <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{{ djt.customerPrintName || 'Customer' }}</p>
-                            <p v-if="djt.clientEmail" class="text-[9px] text-muted-foreground">{{ djt.clientEmail }}</p>
+                            <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                              {{ djt.customerPrintName || 'Customer' }}
+                            </p>
+                            <p v-if="djt.clientEmail" class="text-[9px] text-muted-foreground">
+                              {{ djt.clientEmail }}
+                            </p>
                           </div>
                         </div>
                         <div v-if="djt.customerSignature" class="border rounded-md overflow-hidden bg-white">
-                          <img :src="djt.customerSignature" :alt="`${djt.customerPrintName || 'Customer'} signature`" class="w-full h-16 object-contain" loading="lazy" />
+                          <img :src="djt.customerSignature" :alt="`${djt.customerPrintName || 'Customer'} signature`" class="w-full h-16 object-contain" loading="lazy">
                         </div>
                       </div>
                       <div v-else class="flex items-center gap-2 p-3 rounded-md bg-red-500/5 border border-red-500/20">
                         <Icon name="i-lucide-x-circle" class="size-4 text-red-500 shrink-0" />
-                        <p class="text-xs text-red-600 dark:text-red-400 font-medium">Customer signature missing</p>
+                        <p class="text-xs text-red-600 dark:text-red-400 font-medium">
+                          Customer signature missing
+                        </p>
                       </div>
                     </div>
 
@@ -489,10 +550,14 @@ onMounted(() => {
                         >
                           <Avatar class="size-6 border">
                             <AvatarImage v-if="sig.employeeAvatar" :src="sig.employeeAvatar" />
-                            <AvatarFallback class="text-[8px]">{{ getInitials(sig.employeeName || sig.employee || '') }}</AvatarFallback>
+                            <AvatarFallback class="text-[8px]">
+                              {{ getInitials(sig.employeeName || sig.employee || '') }}
+                            </AvatarFallback>
                           </Avatar>
                           <div class="flex-1 min-w-0">
-                            <p class="text-[10px] font-semibold truncate">{{ sig.employeeName || sig.employee || 'Unknown' }}</p>
+                            <p class="text-[10px] font-semibold truncate">
+                              {{ sig.employeeName || sig.employee || 'Unknown' }}
+                            </p>
                             <p v-if="sig.location && sig.location !== '0.000000, 0.000000'" class="text-[9px] text-muted-foreground truncate">
                               <Icon name="i-lucide-map-pin" class="inline size-2.5" /> {{ sig.location }}
                             </p>
@@ -502,16 +567,20 @@ onMounted(() => {
 
                         <template v-if="djt.unsignedAssigneeCount > 0 && djt.assigneeDetails">
                           <div class="mt-1 pt-1 border-t border-dashed">
-                            <p class="text-[9px] font-bold text-red-500 mb-1 uppercase tracking-wider">Missing Signatures</p>
+                            <p class="text-[9px] font-bold text-red-500 mb-1 uppercase tracking-wider">
+                              Missing Signatures
+                            </p>
                             <div
                               v-for="(a, ai) in djt.assigneeDetails.filter((ad: any) =>
-                                !(djt.signatures || []).some((s: any) => (s.employee || '').toLowerCase() === (ad.email || '').toLowerCase())
+                                !(djt.signatures || []).some((s: any) => (s.employee || '').toLowerCase() === (ad.email || '').toLowerCase()),
                               ).slice(0, 5)"
                               :key="ai"
                               class="flex items-center gap-2 p-1 text-[10px] text-red-500/80"
                             >
                               <Avatar class="size-5 border border-red-500/20">
-                                <AvatarFallback class="text-[7px] bg-red-500/10">{{ getInitials(a.name) }}</AvatarFallback>
+                                <AvatarFallback class="text-[7px] bg-red-500/10">
+                                  {{ getInitials(a.name) }}
+                                </AvatarFallback>
                               </Avatar>
                               <span class="truncate">{{ a.name }}</span>
                               <Icon name="i-lucide-x-circle" class="size-3 shrink-0" />
@@ -531,7 +600,7 @@ onMounted(() => {
                       </h4>
                       <div class="flex gap-2 overflow-x-auto">
                         <div v-for="(img, ii) in djt.djtimages" :key="ii" class="shrink-0 size-20 rounded-md overflow-hidden border bg-muted">
-                          <img :src="img" alt="DJT photo" class="w-full h-full object-cover" loading="lazy" />
+                          <img :src="img" alt="DJT photo" class="w-full h-full object-cover" loading="lazy">
                         </div>
                       </div>
                     </div>
@@ -543,7 +612,9 @@ onMounted(() => {
                       <div class="divide-y divide-border/50">
                         <div v-for="(eq, ei) in djt.equipmentUsed" :key="ei" class="flex items-center justify-between py-1 text-[10px]">
                           <div class="flex items-center gap-2">
-                            <Badge variant="outline" class="text-[9px] h-4 capitalize">{{ eq.type }}</Badge>
+                            <Badge variant="outline" class="text-[9px] h-4 capitalize">
+                              {{ eq.type }}
+                            </Badge>
                             <span class="font-medium">{{ eq.equipment }}</span>
                           </div>
                           <div class="flex items-center gap-3 text-muted-foreground">

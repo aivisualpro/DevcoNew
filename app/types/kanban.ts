@@ -1,7 +1,10 @@
-export interface Subtask {
+export interface Attachment {
   id: string
-  title: string
-  completed: boolean
+  name: string
+  url: string
+  type: 'image' | 'file'
+  size?: number
+  uploadedAt: Date | number | string
 }
 
 export interface Comment {
@@ -25,7 +28,7 @@ export interface Task {
   dueDate?: Date | number | string
   status?: string
   labels?: string[]
-  subtasks?: Subtask[]
+  attachments?: Attachment[]
   comments?: Comment[]
   createdAt: Date | number | string
 }

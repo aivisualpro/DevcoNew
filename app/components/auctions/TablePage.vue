@@ -26,8 +26,11 @@ const {
 // ─── Highlight on return ───
 const highlightedId = ref<string | null>(null)
 
+const router = useRouter()
+
 function navigateToInspection(car: any) {
-  if (!car.appointmentId) return
+  if (!car.appointmentId)
+    return
   sessionStorage.setItem('auction_last_viewed', car.id || car._id)
   router.push(`/inspection/${car.appointmentId}`)
 }
@@ -94,7 +97,8 @@ const paginatedItems = computed(() => {
 })
 
 function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value) return
+  if (page < 1 || page > totalPages.value)
+    return
   currentPage.value = page
 }
 
@@ -103,21 +107,21 @@ const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFil
 
 // ─── Formatters ───
 const statusBadgeClasses: Record<string, string> = {
-  'live': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  'upcoming': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  'otobuy': 'bg-violet-500/10 text-violet-600 border-violet-500/20',
-  'liveAuctionEnded': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  'sold': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
-  'removed': 'bg-red-500/10 text-red-600 border-red-500/20',
+  live: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  upcoming: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  otobuy: 'bg-violet-500/10 text-violet-600 border-violet-500/20',
+  liveAuctionEnded: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  sold: 'bg-teal-500/10 text-teal-600 border-teal-500/20',
+  removed: 'bg-red-500/10 text-red-600 border-red-500/20',
 }
 
 const statusLabels: Record<string, string> = {
-  'live': 'Live',
-  'upcoming': 'Upcoming',
-  'otobuy': 'Otobuy',
-  'liveAuctionEnded': 'Ended',
-  'sold': 'Sold',
-  'removed': 'Removed',
+  live: 'Live',
+  upcoming: 'Upcoming',
+  otobuy: 'Otobuy',
+  liveAuctionEnded: 'Ended',
+  sold: 'Sold',
+  removed: 'Removed',
 }
 
 function getBadgeClass(value: string): string {
@@ -129,12 +133,14 @@ function getStatusLabel(value: string): string {
 }
 
 function formatCurrency(value: any): string {
-  if (value === null || value === undefined || value === 0) return '—'
+  if (value === null || value === undefined || value === 0)
+    return '—'
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value))
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
@@ -142,7 +148,8 @@ function formatDate(value: string): string {
 }
 
 function formatNumber(value: any): string {
-  if (value === null || value === undefined) return '—'
+  if (value === null || value === undefined)
+    return '—'
   return new Intl.NumberFormat('en-IN').format(Number(value))
 }
 
@@ -159,16 +166,16 @@ const pageNumbers = computed(() => {
     return Array.from({ length: total }, (_, i) => i + 1)
   }
   const pages: (number | string)[] = [1]
-  if (current > 3) pages.push('...')
+  if (current > 3)
+    pages.push('...')
   for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
     pages.push(i)
   }
-  if (current < total - 2) pages.push('...')
+  if (current < total - 2)
+    pages.push('...')
   pages.push(total)
   return pages
 })
-
-const router = useRouter()
 </script>
 
 <template>
@@ -190,13 +197,16 @@ const router = useRouter()
   </ClientOnly>
 
   <div class="w-full flex flex-col h-full overflow-hidden">
-
     <!-- Error Banner -->
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load auction data</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load auction data
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
       <Button variant="outline" size="sm" @click="handleRefresh">
         Retry
@@ -207,7 +217,9 @@ const router = useRouter()
     <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">Loading auctions...</p>
+        <p class="text-sm">
+          Loading auctions...
+        </p>
       </div>
     </div>
 
@@ -245,7 +257,7 @@ const router = useRouter()
                   :alt="`${car.make} ${car.model}`"
                   class="size-full object-cover"
                   loading="lazy"
-                />
+                >
                 <div v-else class="size-full flex items-center justify-center">
                   <Icon name="i-lucide-car" class="size-4 text-muted-foreground" />
                 </div>
@@ -255,8 +267,12 @@ const router = useRouter()
             <!-- Car Name (Make + Model + Variant) -->
             <TableCell>
               <div class="min-w-0">
-                <p class="font-medium text-sm truncate">{{ car.make }} {{ car.model }}</p>
-                <p class="text-xs text-muted-foreground truncate">{{ car.variant }}</p>
+                <p class="font-medium text-sm truncate">
+                  {{ car.make }} {{ car.model }}
+                </p>
+                <p class="text-xs text-muted-foreground truncate">
+                  {{ car.variant }}
+                </p>
               </div>
             </TableCell>
 

@@ -2,10 +2,17 @@
 const route = useRoute()
 const { headerState, clearHeader } = usePageHeader()
 
-// Clear header state on route change so pages without setHeader() don't show stale info
-watch(() => route.fullPath, () => {
+// Only clear header when the top-level route segment changes (not sub-tab navigation)
+const topSegment = computed(() => route.path.split('/').filter(Boolean).slice(0, 2).join('/'))
+watch(topSegment, () => {
   clearHeader()
 })
+
+function formatCurrency(value: any): string {
+  if (value === null || value === undefined || Number.isNaN(value))
+    return '$0.00'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(value))
+}
 
 // Derive fallback title from route when no explicit title is set
 const fallbackTitle = computed(() => {
@@ -56,6 +63,24 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
       </div>
     </div>
     <div class="ml-auto flex items-center gap-2">
+      <!-- Live Totals from estimate detail -->
+      <ClientOnly>
+        <template v-if="headerState.extras?.showTotals">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>Subtotal</span>
+            <Badge variant="secondary" class="tabular-nums text-[11px] font-semibold">
+              {{ formatCurrency(headerState.extras.subtotal) }}
+            </Badge>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="font-medium">Grand Total</span>
+            <Badge variant="default" class="tabular-nums text-[11px] font-bold">
+              {{ formatCurrency(headerState.extras.grandTotal) }}
+            </Badge>
+          </div>
+          <Separator orientation="vertical" class="h-4" />
+        </template>
+      </ClientOnly>
       <div id="header-actions" class="contents" />
       <slot />
     </div>

@@ -50,7 +50,7 @@ const _isSyncing = ref(false)
 const _syncResult = ref<{
   success: boolean
   message: string
-  stats?: { total: number; created: number; updated: number; removed: number; duration: number }
+  stats?: { total: number, created: number, updated: number, removed: number, duration: number }
 } | null>(null)
 
 export function useJhaApi() {
@@ -58,8 +58,10 @@ export function useJhaApi() {
    * Fetch all JHA records from Firebase via our server API.
    */
   async function fetchAllJha(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

@@ -6,12 +6,14 @@ const props = defineProps<{
 
 // ─── Formatters ───
 function formatCurrency(value: any): string {
-  if (value === null || value === undefined || isNaN(value)) return '$0'
+  if (value === null || value === undefined || Number.isNaN(value))
+    return '$0'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value))
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' })
   }
@@ -31,7 +33,8 @@ const costCategories = [
 
 // Compute cost breakdown from estimate line items
 const costBreakdown = computed(() => {
-  if (!props.estimate) return []
+  if (!props.estimate)
+    return []
   const est = props.estimate
 
   return costCategories.map((cat) => {
@@ -50,13 +53,15 @@ const totalGrandTotal = computed(() => Number(props.estimate?.grandTotal || 0))
 
 // Percentage for each cost category
 function getCostPercent(subTotal: number): string {
-  if (!totalSubTotal.value || totalSubTotal.value === 0) return '0'
+  if (!totalSubTotal.value || totalSubTotal.value === 0)
+    return '0'
   return ((subTotal / totalSubTotal.value) * 100).toFixed(1)
 }
 
 // Semi-circle gauge segments
 const gaugeSegments = computed(() => {
-  if (!costBreakdown.value.length) return []
+  if (!costBreakdown.value.length)
+    return []
   const total = costBreakdown.value.reduce((sum, c) => sum + c.subTotal, 0)
   // Semi-circle arc: radius=16, circumference of half circle = π * r ≈ 50.27
   const arcLength = Math.PI * 16 // ~50.27
@@ -77,13 +82,15 @@ const gaugeSegments = computed(() => {
 
 // Get services count
 const servicesCount = computed(() => {
-  if (!props.estimate?.services) return 0
+  if (!props.estimate?.services)
+    return 0
   return Array.isArray(props.estimate.services) ? props.estimate.services.length : 0
 })
 
 // Version info placeholder
 const versions = computed(() => {
-  if (!props.estimate) return []
+  if (!props.estimate)
+    return []
   return [{
     version: 'V1',
     estimate: props.estimate.estimate || '—',
@@ -100,7 +107,9 @@ const versions = computed(() => {
     <div v-if="isLoading && !estimate" class="flex items-center justify-center h-64">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">Loading estimate...</p>
+        <p class="text-sm">
+          Loading estimate...
+        </p>
       </div>
     </div>
 
@@ -108,7 +117,6 @@ const versions = computed(() => {
     <div v-else-if="estimate" class="space-y-6">
       <!-- Top 4 Cards Row -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
         <!-- Card 1: Customer & Details -->
         <div class="rounded-xl border bg-card p-5 space-y-4 shadow-sm">
           <div class="space-y-3">
@@ -121,19 +129,27 @@ const versions = computed(() => {
             </div>
             <div>
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Contact</label>
-              <p class="text-sm mt-0.5">{{ estimate.contactName || '—' }}</p>
+              <p class="text-sm mt-0.5">
+                {{ estimate.contactName || '—' }}
+              </p>
             </div>
             <div>
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Job Address</label>
-              <p class="text-sm mt-0.5 text-muted-foreground">{{ estimate.jobAddress || 'No address' }}</p>
+              <p class="text-sm mt-0.5 text-muted-foreground">
+                {{ estimate.jobAddress || 'No address' }}
+              </p>
             </div>
             <div>
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Project Name</label>
-              <p class="text-sm mt-0.5">{{ estimate.projectName || '—' }}</p>
+              <p class="text-sm mt-0.5">
+                {{ estimate.projectName || '—' }}
+              </p>
             </div>
             <div>
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">USA Number</label>
-              <p class="text-sm mt-0.5 text-muted-foreground">{{ estimate.usaNumber || '—' }}</p>
+              <p class="text-sm mt-0.5 text-muted-foreground">
+                {{ estimate.usaNumber || '—' }}
+              </p>
             </div>
           </div>
         </div>
@@ -143,11 +159,15 @@ const versions = computed(() => {
           <div class="grid grid-cols-2 gap-4">
             <div class="text-center">
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Date</label>
-              <p class="text-lg font-bold mt-1 tabular-nums">{{ formatDate(estimate.date) }}</p>
+              <p class="text-lg font-bold mt-1 tabular-nums">
+                {{ formatDate(estimate.date) }}
+              </p>
             </div>
             <div class="text-center">
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Estimate No.</label>
-              <p class="text-lg font-bold mt-1 text-blue-600">{{ estimate.estimate || '—' }}</p>
+              <p class="text-lg font-bold mt-1 text-blue-600">
+                {{ estimate.estimate || '—' }}
+              </p>
             </div>
           </div>
 
@@ -194,7 +214,7 @@ const versions = computed(() => {
             <div class="text-center">
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Markup %</label>
               <p class="text-xl font-bold mt-1 tabular-nums text-foreground">
-                {{ estimate.bidMarkUp ? String(estimate.bidMarkUp).replace('%', '') + '%' : '—' }}
+                {{ estimate.bidMarkUp ? `${String(estimate.bidMarkUp).replace('%', '')}%` : '—' }}
               </p>
             </div>
           </div>
@@ -212,7 +232,9 @@ const versions = computed(() => {
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <p class="text-[10px] text-muted-foreground mt-1">{{ estimate.proposalWriterName || '—' }}</p>
+              <p class="text-[10px] text-muted-foreground mt-1">
+                {{ estimate.proposalWriterName || '—' }}
+              </p>
             </div>
             <div class="text-center">
               <label class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Status</label>
@@ -236,7 +258,9 @@ const versions = computed(() => {
 
         <!-- Card 3: Cost Breakdown with Semi-circle Gauge -->
         <div class="rounded-xl border bg-card p-5 shadow-sm">
-          <h4 class="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold mb-5 text-center">Cost Breakdown</h4>
+          <h4 class="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold mb-5 text-center">
+            Cost Breakdown
+          </h4>
 
           <!-- Semi-circle Gauge -->
           <div class="flex justify-center mb-5">
@@ -269,8 +293,12 @@ const versions = computed(() => {
               </svg>
               <!-- Center text -->
               <div class="absolute inset-0 flex flex-col items-center justify-end pb-0">
-                <p class="text-2xl font-bold tabular-nums tracking-tight">{{ formatCurrency(totalGrandTotal) }}</p>
-                <p class="text-xs text-muted-foreground tabular-nums">{{ formatCurrency(totalSubTotal) }}</p>
+                <p class="text-2xl font-bold tabular-nums tracking-tight">
+                  {{ formatCurrency(totalGrandTotal) }}
+                </p>
+                <p class="text-xs text-muted-foreground tabular-nums">
+                  {{ formatCurrency(totalSubTotal) }}
+                </p>
               </div>
             </div>
           </div>
@@ -298,7 +326,9 @@ const versions = computed(() => {
               <div class="w-1 h-4 bg-blue-500 rounded-full" />
               Version History
             </h4>
-            <Badge variant="secondary" class="text-[10px] h-5">{{ versions.length }}</Badge>
+            <Badge variant="secondary" class="text-[10px] h-5">
+              {{ versions.length }}
+            </Badge>
           </div>
 
           <div class="space-y-2">
@@ -311,8 +341,12 @@ const versions = computed(() => {
                 <span class="text-[10px] font-bold text-blue-600">{{ ver.version }}</span>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs font-semibold">{{ ver.estimate }}</p>
-                <p class="text-[10px] text-muted-foreground">{{ ver.date }}</p>
+                <p class="text-xs font-semibold">
+                  {{ ver.estimate }}
+                </p>
+                <p class="text-[10px] text-muted-foreground">
+                  {{ ver.date }}
+                </p>
               </div>
               <div class="text-right shrink-0">
                 <Badge
@@ -327,7 +361,9 @@ const versions = computed(() => {
                 >
                   {{ ver.status }}
                 </Badge>
-                <p class="text-xs font-semibold mt-0.5 tabular-nums">{{ ver.total }}</p>
+                <p class="text-xs font-semibold mt-0.5 tabular-nums">
+                  {{ ver.total }}
+                </p>
               </div>
             </div>
           </div>
@@ -337,14 +373,18 @@ const versions = computed(() => {
               <div class="w-1 h-4 bg-amber-500 rounded-full" />
               Change Orders
             </h4>
-            <p class="text-xs text-muted-foreground mt-3 italic">No change orders found</p>
+            <p class="text-xs text-muted-foreground mt-3 italic">
+              No change orders found
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Services Tags -->
       <div v-if="estimate.services?.length" class="rounded-xl border bg-card p-5 shadow-sm">
-        <h4 class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Services</h4>
+        <h4 class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-3">
+          Services
+        </h4>
         <div class="flex flex-wrap gap-2">
           <Badge
             v-for="service in estimate.services"

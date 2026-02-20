@@ -23,7 +23,8 @@ fetchAllJha()
 
 // ─── Base items (scoped to estimate if provided) ───
 const baseItems = computed(() => {
-  if (!props.estimateNumber) return allJha.value
+  if (!props.estimateNumber)
+    return allJha.value
   return allJha.value.filter(j => j.estimate === props.estimateNumber)
 })
 
@@ -74,7 +75,8 @@ const sortDir = ref<SortDir>('desc')
 function toggleSort(key: string) {
   if (sortKey.value === key) {
     sortDir.value = sortDir.value === 'desc' ? 'asc' : sortDir.value === 'asc' ? null : 'desc'
-    if (sortDir.value === null) sortKey.value = ''
+    if (sortDir.value === null)
+      sortKey.value = ''
   }
   else {
     sortKey.value = key
@@ -83,7 +85,8 @@ function toggleSort(key: string) {
 }
 
 const sortedItems = computed(() => {
-  if (!sortKey.value || !sortDir.value) return filteredItems.value
+  if (!sortKey.value || !sortDir.value)
+    return filteredItems.value
   const items = [...filteredItems.value]
   const key = sortKey.value
   const dir = sortDir.value
@@ -91,9 +94,12 @@ const sortedItems = computed(() => {
   items.sort((a, b) => {
     const av = a[key]
     const bv = b[key]
-    if (av == null && bv == null) return 0
-    if (av == null) return 1
-    if (bv == null) return -1
+    if (av == null && bv == null)
+      return 0
+    if (av == null)
+      return 1
+    if (bv == null)
+      return -1
 
     let result = 0
     if (key === 'date' || key === 'createdAt') {
@@ -128,16 +134,21 @@ watch([activeTab, search], () => {
 
 // ─── Tab counts ───
 function getTabCount(key: string): number {
-  if (!isFetched.value) return 0
-  if (key === 'all') return baseItems.value.length
-  if (key === 'missing-client') return baseItems.value.filter(j => !j.hasClientSign).length
-  if (key === 'missing-assignee') return baseItems.value.filter(j => !j.hasAllAssigneeSigns).length
+  if (!isFetched.value)
+    return 0
+  if (key === 'all')
+    return baseItems.value.length
+  if (key === 'missing-client')
+    return baseItems.value.filter(j => !j.hasClientSign).length
+  if (key === 'missing-assignee')
+    return baseItems.value.filter(j => !j.hasAllAssigneeSigns).length
   return 0
 }
 
 // ─── Formatters ───
 function formatDate(dateStr: string): string {
-  if (!dateStr) return '—'
+  if (!dateStr)
+    return '—'
   try {
     if (dateStr.includes('T')) {
       const datePart = dateStr.split('T')[0] || ''
@@ -150,10 +161,11 @@ function formatDate(dateStr: string): string {
 }
 
 function formatTime(timeStr: string): string {
-  if (!timeStr) return ''
+  if (!timeStr)
+    return ''
   try {
     const parts = timeStr.split(':')
-    const h = parseInt(parts[0] || '0', 10)
+    const h = Number.parseInt(parts[0] || '0', 10)
     const m = parts[1] || '00'
     const ampm = h >= 12 ? 'PM' : 'AM'
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
@@ -163,7 +175,8 @@ function formatTime(timeStr: string): string {
 }
 
 function getInitials(name: string): string {
-  if (!name) return '??'
+  if (!name)
+    return '??'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
@@ -219,7 +232,8 @@ async function handleRefresh() {
 const scrollSentinel = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-  if (!scrollSentinel.value) return
+  if (!scrollSentinel.value)
+    return
   const observer = new IntersectionObserver(
     (entries) => {
       if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) {
@@ -281,7 +295,7 @@ onMounted(() => {
           :class="[
             activeTab === tab.key
               ? 'text-foreground bg-background border border-b-0 border-border'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
           ]"
           @click="activeTab = tab.key"
         >
@@ -309,10 +323,16 @@ onMounted(() => {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load JHA records</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load JHA records
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
-      <Button variant="outline" size="sm" @click="handleRefresh">Retry</Button>
+      <Button variant="outline" size="sm" @click="handleRefresh">
+        Retry
+      </Button>
     </div>
 
     <!-- Main content -->
@@ -321,7 +341,9 @@ onMounted(() => {
       <table class="w-full text-[11px]">
         <thead class="sticky top-0 z-10 bg-background border-b">
           <tr>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">#</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8">
+              #
+            </th>
             <th
               class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
               @click="toggleSort('date')"
@@ -335,7 +357,9 @@ onMounted(() => {
                 />
               </div>
             </th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Time</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Time
+            </th>
             <th
               class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
               @click="toggleSort('scheduleTitle')"
@@ -349,10 +373,18 @@ onMounted(() => {
                 />
               </div>
             </th>
-            <th v-if="!estimateNumber" class="px-3 py-2 text-left font-medium text-muted-foreground">Estimate</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Client</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Service</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Created By</th>
+            <th v-if="!estimateNumber" class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Estimate
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Client
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Service
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Created By
+            </th>
             <th
               class="px-3 py-2 text-left font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
               @click="toggleSort('signatureCount')"
@@ -366,8 +398,12 @@ onMounted(() => {
                 />
               </div>
             </th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Client Sign</th>
-            <th class="px-3 py-2 text-left font-medium text-muted-foreground">Hazards</th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Client Sign
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-muted-foreground">
+              Hazards
+            </th>
             <th class="px-3 py-2 text-left font-medium text-muted-foreground w-8" />
           </tr>
         </thead>
@@ -377,7 +413,9 @@ onMounted(() => {
             <td :colspan="12" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-                <p class="text-sm">Loading JHA records...</p>
+                <p class="text-sm">
+                  Loading JHA records...
+                </p>
               </div>
             </td>
           </tr>
@@ -389,7 +427,9 @@ onMounted(() => {
                 <div class="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Icon name="i-lucide-shield-off" class="size-8 text-muted-foreground/50" />
                 </div>
-                <h3 class="text-lg font-bold">No JHA Records</h3>
+                <h3 class="text-lg font-bold">
+                  No JHA Records
+                </h3>
                 <p class="text-sm text-muted-foreground max-w-xs mt-1">
                   {{ search ? 'No records match your search.' : estimateNumber ? 'No JHA records for this estimate.' : 'No Job Hazard Analysis records found.' }}
                 </p>
@@ -409,7 +449,9 @@ onMounted(() => {
               @click="toggleExpand(jha.id)"
             >
               <!-- # -->
-              <td class="px-3 py-2.5 text-muted-foreground tabular-nums">{{ index + 1 }}</td>
+              <td class="px-3 py-2.5 text-muted-foreground tabular-nums">
+                {{ index + 1 }}
+              </td>
 
               <!-- Date -->
               <td class="px-3 py-2.5 whitespace-nowrap tabular-nums font-medium">
@@ -423,7 +465,9 @@ onMounted(() => {
 
               <!-- Schedule Title -->
               <td class="px-3 py-2.5 max-w-[200px]">
-                <p class="font-medium truncate" :title="jha.scheduleTitle">{{ jha.scheduleTitle || '—' }}</p>
+                <p class="font-medium truncate" :title="jha.scheduleTitle">
+                  {{ jha.scheduleTitle || '—' }}
+                </p>
               </td>
 
               <!-- Estimate (hidden in scoped mode) -->
@@ -436,7 +480,9 @@ onMounted(() => {
 
               <!-- Client -->
               <td class="px-3 py-2.5 max-w-[150px]">
-                <p class="truncate" :title="jha.customerName">{{ jha.customerName || '—' }}</p>
+                <p class="truncate" :title="jha.customerName">
+                  {{ jha.customerName || '—' }}
+                </p>
               </td>
 
               <!-- Service -->
@@ -452,7 +498,9 @@ onMounted(() => {
                 <div v-if="jha.createdByName" class="flex items-center gap-1.5">
                   <Avatar class="size-5 border">
                     <AvatarImage v-if="jha.createdByAvatar" :src="jha.createdByAvatar" />
-                    <AvatarFallback class="text-[7px]">{{ getInitials(jha.createdByName) }}</AvatarFallback>
+                    <AvatarFallback class="text-[7px]">
+                      {{ getInitials(jha.createdByName) }}
+                    </AvatarFallback>
                   </Avatar>
                   <span class="text-[10px] font-medium truncate max-w-[100px]">{{ jha.createdByName }}</span>
                 </div>
@@ -520,7 +568,9 @@ onMounted(() => {
                         >
                           {{ h.label }}
                         </Badge>
-                        <p v-if="getActiveHazards(jha).length === 0" class="text-xs text-muted-foreground italic">No hazards identified</p>
+                        <p v-if="getActiveHazards(jha).length === 0" class="text-xs text-muted-foreground italic">
+                          No hazards identified
+                        </p>
                       </div>
                     </div>
 
@@ -554,7 +604,7 @@ onMounted(() => {
                       </div>
                       <div v-if="jha.nameOfHospital" class="mt-2 pt-2 border-t text-[10px] text-muted-foreground">
                         <span class="font-semibold">Hospital:</span> {{ jha.nameOfHospital }}
-                        <br v-if="jha.addressOfHospital" />
+                        <br v-if="jha.addressOfHospital">
                         <span v-if="jha.addressOfHospital">{{ jha.addressOfHospital }}</span>
                       </div>
                     </div>
@@ -573,10 +623,14 @@ onMounted(() => {
                         >
                           <Avatar class="size-6 border">
                             <AvatarImage v-if="sig.employeeAvatar" :src="sig.employeeAvatar" />
-                            <AvatarFallback class="text-[8px]">{{ getInitials(sig.employeeName || sig.employee || '') }}</AvatarFallback>
+                            <AvatarFallback class="text-[8px]">
+                              {{ getInitials(sig.employeeName || sig.employee || '') }}
+                            </AvatarFallback>
                           </Avatar>
                           <div class="flex-1 min-w-0">
-                            <p class="text-[10px] font-semibold truncate">{{ sig.employeeName || sig.employee || 'Unknown' }}</p>
+                            <p class="text-[10px] font-semibold truncate">
+                              {{ sig.employeeName || sig.employee || 'Unknown' }}
+                            </p>
                             <p v-if="sig.location" class="text-[9px] text-muted-foreground truncate">
                               <Icon name="i-lucide-map-pin" class="inline size-2.5" /> {{ sig.location }}
                             </p>
@@ -587,16 +641,20 @@ onMounted(() => {
                         <!-- Missing assignee signatures -->
                         <template v-if="jha.unsignedAssigneeCount > 0 && jha.assigneeDetails">
                           <div class="mt-1 pt-1 border-t border-dashed">
-                            <p class="text-[9px] font-bold text-red-500 mb-1 uppercase tracking-wider">Missing Signatures</p>
+                            <p class="text-[9px] font-bold text-red-500 mb-1 uppercase tracking-wider">
+                              Missing Signatures
+                            </p>
                             <div
                               v-for="(a, ai) in jha.assigneeDetails.filter((ad: any) =>
-                                !(jha.signatures || []).some((s: any) => (s.employee || '').toLowerCase() === (ad.email || '').toLowerCase())
+                                !(jha.signatures || []).some((s: any) => (s.employee || '').toLowerCase() === (ad.email || '').toLowerCase()),
                               ).slice(0, 5)"
                               :key="ai"
                               class="flex items-center gap-2 p-1 text-[10px] text-red-500/80"
                             >
                               <Avatar class="size-5 border border-red-500/20">
-                                <AvatarFallback class="text-[7px] bg-red-500/10">{{ getInitials(a.name) }}</AvatarFallback>
+                                <AvatarFallback class="text-[7px] bg-red-500/10">
+                                  {{ getInitials(a.name) }}
+                                </AvatarFallback>
                               </Avatar>
                               <span class="truncate">{{ a.name }}</span>
                               <Icon name="i-lucide-x-circle" class="size-3 shrink-0" />
@@ -621,8 +679,12 @@ onMounted(() => {
 
                   <!-- Notes -->
                   <div v-if="jha.anySpecificNotes" class="rounded-lg border bg-card p-3">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Notes</h4>
-                    <p class="text-xs text-foreground">{{ jha.anySpecificNotes }}</p>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      Notes
+                    </h4>
+                    <p class="text-xs text-foreground">
+                      {{ jha.anySpecificNotes }}
+                    </p>
                   </div>
                 </div>
               </td>

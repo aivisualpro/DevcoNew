@@ -1,12 +1,36 @@
 /**
  * GET /api/estimates
  *
- * Reads all estimates from Firestore and returns them.
+ * Reads estimates from Firestore — returns only the fields needed for the table listing.
+ * Uses Firestore .select() to avoid downloading heavy nested data (lineItems, documents, etc.)
  */
 export default defineEventHandler(async () => {
   try {
     const firestore = useFirestoreAdmin()
-    const snapshot = await firestore.collection('devcoEstimates').get()
+
+    // Only select the fields the table and filters actually use
+    const snapshot = await firestore
+      .collection('devcoEstimates')
+      .select(
+        'estimate',
+        'projectName',
+        'date',
+        'customerName',
+        'proposalWriterName',
+        'proposalWriterAvatar',
+        'fringe',
+        'certifiedPayroll',
+        'services',
+        'subTotal',
+        'bidMarkUp',
+        'margin',
+        'grandTotal',
+        'status',
+        'createdAt',
+        'updatedAt',
+        'legacy_id',
+      )
+      .get()
 
     const estimates = snapshot.docs.map((doc) => {
       const data = doc.data()

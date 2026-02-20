@@ -33,11 +33,15 @@ defineProps<{
         <!-- Logo + Title -->
         <div class="flex items-center gap-4 mb-12">
           <div class="h-16 w-16 rounded-full bg-black/80 flex items-center justify-center shadow-2xl overflow-hidden ring-2 ring-white/20">
-            <img src="/devco-logo.png" alt="DEVCO" class="h-full w-full object-cover" />
+            <img src="/devco-logo.png" alt="DEVCO" class="h-full w-full object-cover">
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-white tracking-wide">DEVCOERP</h2>
-            <p class="text-blue-100/80 text-sm font-medium">Cloud Solutions</p>
+            <h2 class="text-2xl font-bold text-white tracking-wide">
+              DEVCOERP
+            </h2>
+            <p class="text-blue-100/80 text-sm font-medium">
+              Cloud Solutions
+            </p>
           </div>
         </div>
 
@@ -46,7 +50,7 @@ defineProps<{
 
         <!-- Main heading -->
         <h1 class="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
-          Complete Business<br />Management Solution
+          Complete Business<br>Management Solution
         </h1>
 
         <!-- Description -->

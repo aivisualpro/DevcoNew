@@ -7,7 +7,8 @@ const route = useRoute()
 const isListView = computed(() => {
   // Path is like /estimates/all, /estimates/pending, etc.
   const segments = route.path.split('/').filter(Boolean) // ['estimates', 'all']
-  if (segments.length === 1) return true // /estimates (index redirect)
+  if (segments.length === 1)
+    return true // /estimates (index redirect)
   if (segments.length === 2) {
     const category = segments[1] ?? ''
     return !!estimateRouteFilters[category]

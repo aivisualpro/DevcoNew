@@ -41,4 +41,10 @@ export const estimateDetailTabs = [
     icon: 'i-lucide-file-text',
     color: 'text-rose-500',
   },
+  {
+    id: 'timeline',
+    label: 'Timeline',
+    icon: 'i-lucide-gantt-chart',
+    color: 'text-teal-500',
+  },
 ]

@@ -6,17 +6,24 @@ import { useMongoClient } from '../../utils/mongodb'
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
  */
 function sanitizeForFirestore(value: any): any {
-  if (value === null || value === undefined) return null
-  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function')) return value.toString()
-  if (value instanceof Date) return value.toISOString()
-  if (Buffer.isBuffer(value)) return value.toString('base64')
-  if (Array.isArray(value)) return value.map(sanitizeForFirestore)
+  if (value === null || value === undefined)
+    return null
+  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function'))
+    return value.toString()
+  if (value instanceof Date)
+    return value.toISOString()
+  if (Buffer.isBuffer(value))
+    return value.toString('base64')
+  if (Array.isArray(value))
+    return value.map(sanitizeForFirestore)
   if (typeof value === 'object' && value !== null) {
-    if (value.constructor && value.constructor !== Object) return value.toString()
+    if (value.constructor && value.constructor !== Object)
+      return value.toString()
     const result: Record<string, any> = {}
     for (const [k, v] of Object.entries(value)) {
       const sanitized = sanitizeForFirestore(v)
-      if (sanitized !== undefined) result[k] = sanitized
+      if (sanitized !== undefined)
+        result[k] = sanitized
     }
     return result
   }
@@ -33,7 +40,7 @@ export default defineEventHandler(async () => {
 
   try {
     const firestore = useFirestoreAdmin()
-    
+
     // ── Step 1: Load Reference Data from Firestore ──
     // We fetch employees and clients from Firestore because we need their valid Firebase IDs
     // to create proper references in the estimates collection.
@@ -54,9 +61,12 @@ export default defineEventHandler(async () => {
         legacyId: d.legacy_id ? d.legacy_id.toString() : null,
       }
 
-      if (info.email) empByEmail.set(info.email, info)
-      if (info.name) empByName.set(info.name.toLowerCase(), info)
-      if (info.legacyId) empByLegacyId.set(info.legacyId, info)
+      if (info.email)
+        empByEmail.set(info.email, info)
+      if (info.name)
+        empByName.set(info.name.toLowerCase(), info)
+      if (info.legacyId)
+        empByLegacyId.set(info.legacyId, info)
     })
 
     // B. Clients: Build lookup for Legacy ID -> Firebase ID & Name
@@ -66,9 +76,9 @@ export default defineEventHandler(async () => {
     clientsSnap.docs.forEach((doc) => {
       const d = doc.data()
       if (d.legacy_id) {
-        clientByLegacyId.set(d.legacy_id.toString(), { 
-            id: doc.id,
-            name: d.name || ''
+        clientByLegacyId.set(d.legacy_id.toString(), {
+          id: doc.id,
+          name: d.name || '',
         })
       }
     })
@@ -98,7 +108,7 @@ export default defineEventHandler(async () => {
       for (const doc of existingSnapshot.docs) {
         const data = doc.data()
         if (data.legacy_id) {
-            legacyIdToDocId.set(data.legacy_id, doc.id)
+          legacyIdToDocId.set(data.legacy_id, doc.id)
         }
       }
     }
@@ -121,21 +131,22 @@ export default defineEventHandler(async () => {
         // Determine Doc ID: Use existing if found, else auto-generate
         let docRef
         const existingDocId = legacyIdToDocId.get(legacyId)
-        
+
         if (existingDocId) {
-            docRef = firestoreCollection.doc(existingDocId)
-            updated++
-        } else {
-            docRef = firestoreCollection.doc()
-            created++
+          docRef = firestoreCollection.doc(existingDocId)
+          updated++
         }
-        
+        else {
+          docRef = firestoreCollection.doc()
+          created++
+        }
+
         // Base payload
         const payload = sanitizeForFirestore(estimate)
-        
+
         // Standard fields
         payload.legacy_id = legacyId
-        delete payload._id 
+        delete payload._id
         payload._syncedAt = FieldValue.serverTimestamp()
 
         // ── Remove sub-document fields (synced as separate collections) ──
@@ -146,37 +157,40 @@ export default defineEventHandler(async () => {
         // proposalWriter could be Email, Name, or ObjectId string
         let writerInfo = null
         if (estimate.proposalWriter) {
-            const raw = estimate.proposalWriter.toString().trim()
-            const rawLower = raw.toLowerCase()
-            
-            // Priority 1: Email
-            writerInfo = empByEmail.get(rawLower)
-            // Priority 2: Name
-            if (!writerInfo) writerInfo = empByName.get(rawLower)
-            // Priority 3: Legacy MongoDB ID
-            if (!writerInfo) writerInfo = empByLegacyId.get(raw)
+          const raw = estimate.proposalWriter.toString().trim()
+          const rawLower = raw.toLowerCase()
+
+          // Priority 1: Email
+          writerInfo = empByEmail.get(rawLower)
+          // Priority 2: Name
+          if (!writerInfo)
+            writerInfo = empByName.get(rawLower)
+          // Priority 3: Legacy MongoDB ID
+          if (!writerInfo)
+            writerInfo = empByLegacyId.get(raw)
         }
 
         if (writerInfo) {
-            payload.proposalWriter = writerInfo.firebaseId // Actual Firebase Reference ID
-            payload.proposalWriterName = writerInfo.name
-            payload.proposalWriterAvatar = writerInfo.avatar
-        } else {
-             // Fallback: keep original value if no match found
-             payload.proposalWriterName = estimate.proposalWriter
-             payload.proposalWriterAvatar = ''
+          payload.proposalWriter = writerInfo.firebaseId // Actual Firebase Reference ID
+          payload.proposalWriterName = writerInfo.name
+          payload.proposalWriterAvatar = writerInfo.avatar
+        }
+        else {
+          // Fallback: keep original value if no match found
+          payload.proposalWriterName = estimate.proposalWriter
+          payload.proposalWriterAvatar = ''
         }
 
         // ── Resolve Customer ──
         if (estimate.customerId) {
-            const mId = estimate.customerId.toString()
-            const clientInfo = clientByLegacyId.get(mId)
-            
-            if (clientInfo) {
-                payload.customerId = clientInfo.id // Actual Firebase Reference ID
-                payload.customerName = clientInfo.name // Store name for display
-                payload.legacy_customerId = mId
-            }
+          const mId = estimate.customerId.toString()
+          const clientInfo = clientByLegacyId.get(mId)
+
+          if (clientInfo) {
+            payload.customerId = clientInfo.id // Actual Firebase Reference ID
+            payload.customerName = clientInfo.name // Store name for display
+            payload.legacy_customerId = mId
+          }
         }
 
         batch.set(docRef, payload, { merge: true })
@@ -189,9 +203,9 @@ export default defineEventHandler(async () => {
     // Identify docs in Firestore whose legacy_id is no longer in MongoDB
     const orphanedDocIds: string[] = []
     for (const [legacyId, docId] of legacyIdToDocId) {
-        if (!processedLegacyIds.has(legacyId)) {
-            orphanedDocIds.push(docId)
-        }
+      if (!processedLegacyIds.has(legacyId)) {
+        orphanedDocIds.push(docId)
+      }
     }
 
     if (orphanedDocIds.length > 0) {

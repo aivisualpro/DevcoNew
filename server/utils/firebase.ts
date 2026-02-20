@@ -1,7 +1,7 @@
-import { cert, getApps, initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { cert, getApps, initializeApp } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
 
 let _db: ReturnType<typeof getFirestore> | null = null
 
@@ -10,7 +10,8 @@ let _db: ReturnType<typeof getFirestore> | null = null
  * Connects to the 'devcodbinitial' database in the devcoerp project.
  */
 export function useFirestoreAdmin() {
-  if (_db) return _db
+  if (_db)
+    return _db
 
   if (getApps().length === 0) {
     const saPath = resolve(process.cwd(), 'firebase-service-account.json')

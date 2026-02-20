@@ -6,6 +6,7 @@ defineProps<{
     name: string
     email: string
     avatar: string
+    appRole: string
   }
 }>()
 
@@ -41,7 +42,7 @@ const showModalTheme = ref(false)
             </Avatar>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-semibold">{{ user.name }}</span>
-              <span class="truncate text-xs">{{ user.email }}</span>
+              <span class="truncate text-xs text-muted-foreground">{{ user.appRole || user.email }}</span>
             </div>
             <Icon name="i-lucide-chevrons-up-down" class="ml-auto size-4" />
           </SidebarMenuButton>
@@ -65,13 +66,6 @@ const showModalTheme = ref(false)
               </div>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <Icon name="i-lucide-sparkles" />
-              Upgrade to Pro
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem>

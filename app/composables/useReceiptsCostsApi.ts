@@ -25,7 +25,7 @@ export interface ReceiptCostRecord {
   service: string
   upload: any[]
   uploadCount: number
-  tags: { email: string; id?: string; name: string; avatar?: string }[]
+  tags: { email: string, id?: string, name: string, avatar?: string }[]
   tagCount: number
 }
 
@@ -39,13 +39,15 @@ const _isSyncing = ref(false)
 const _syncResult = ref<{
   success: boolean
   message: string
-  stats?: { total: number; created: number; updated: number; removed: number; duration: number }
+  stats?: { total: number, created: number, updated: number, removed: number, duration: number }
 } | null>(null)
 
 export function useReceiptsCostsApi() {
   async function fetchAll(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

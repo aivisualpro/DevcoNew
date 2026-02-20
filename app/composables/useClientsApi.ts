@@ -31,8 +31,10 @@ export function useClientsApi() {
    * Fetch all clients from Firebase via our server API.
    */
   async function fetchAllClients(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2, Mail, Lock } from 'lucide-vue-next'
+import { Loader2, Lock, Mail } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import PasswordInput from '~/components/PasswordInput.vue'
 

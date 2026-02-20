@@ -18,25 +18,47 @@ export default defineEventHandler(async (event) => {
 
   try {
     const firestore = useFirestoreAdmin()
+    const normalizedEmail = email.toLowerCase().trim()
 
-    // Query for employee by email (case-insensitive)
-    const snapshot = await firestore
+    console.log('[Auth Login] Attempting login for:', normalizedEmail)
+
+    // Try exact match first
+    let snapshot = await firestore
       .collection('devcoEmployees')
-      .where('email', '==', email.toLowerCase().trim())
+      .where('email', '==', normalizedEmail)
       .limit(1)
       .get()
 
+    // If no exact match, try fetching all employees and do case-insensitive match
+    // (Firestore queries are case-sensitive, so stored email might have different casing)
     if (snapshot.empty) {
-      throw createError({
-        statusCode: 401,
-        statusMessage: 'Invalid email or password',
-      })
+      console.log('[Auth Login] No exact email match, trying case-insensitive lookup...')
+      const allSnapshot = await firestore
+        .collection('devcoEmployees')
+        .get()
+
+      const matchingDoc = allSnapshot.docs.find(
+        d => d.data().email?.toLowerCase().trim() === normalizedEmail,
+      )
+
+      if (!matchingDoc) {
+        console.log('[Auth Login] No employee found for email:', normalizedEmail)
+        throw createError({
+          statusCode: 401,
+          statusMessage: 'Invalid email or password',
+        })
+      }
+
+      // Create a compatible snapshot-like result
+      snapshot = { empty: false, docs: [matchingDoc] } as any
     }
 
     const doc = snapshot.docs[0]
     const employee = doc.data()
+    console.log('[Auth Login] Found employee:', employee.firstName, employee.lastName, '| Status:', employee.status)
 
     // Check password
+    console.log('[Auth Login] Password check — stored length:', employee.password?.length, '| input length:', password.length)
     if (employee.password !== password) {
       throw createError({
         statusCode: 401,
@@ -79,7 +101,8 @@ export default defineEventHandler(async (event) => {
   }
   catch (error: any) {
     // Re-throw if it's already an H3 error
-    if (error.statusCode) throw error
+    if (error.statusCode)
+      throw error
 
     console.error('[Auth Login Error]', error)
     throw createError({

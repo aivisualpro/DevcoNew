@@ -2,7 +2,8 @@ interface PageHeaderState {
   title: string
   description?: string
   icon?: string
-  backLink?: { label: string; href: string }
+  backLink?: { label: string, href: string }
+  extras?: Record<string, any>
 }
 
 const headerState = reactive<PageHeaderState>({
@@ -17,6 +18,7 @@ export function usePageHeader() {
     headerState.description = opts.description || ''
     headerState.icon = opts.icon || ''
     headerState.backLink = opts.backLink
+    headerState.extras = opts.extras
   }
 
   function clearHeader() {
@@ -24,6 +26,7 @@ export function usePageHeader() {
     headerState.description = ''
     headerState.icon = ''
     headerState.backLink = undefined
+    headerState.extras = undefined
   }
 
   return {

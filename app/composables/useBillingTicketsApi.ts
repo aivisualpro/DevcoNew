@@ -19,7 +19,7 @@ export interface BillingTicket {
   customerName: string
   service: string
   item: string
-  titleDescriptions: { title: string; description: string; _id: string }[]
+  titleDescriptions: { title: string, description: string, _id: string }[]
   titleDescriptionCount: number
   uploads: any[]
   uploadCount: number
@@ -37,7 +37,7 @@ const _isSyncing = ref(false)
 const _syncResult = ref<{
   success: boolean
   message: string
-  stats?: { total: number; created: number; updated: number; removed: number; duration: number }
+  stats?: { total: number, created: number, updated: number, removed: number, duration: number }
 } | null>(null)
 
 export function useBillingTicketsApi() {
@@ -45,8 +45,10 @@ export function useBillingTicketsApi() {
    * Fetch all billing tickets from Firebase via our server API.
    */
   async function fetchAllTickets(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

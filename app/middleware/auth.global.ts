@@ -18,10 +18,17 @@ export default defineNuxtRouteMiddleware((to, _from) => {
   // Rolling renewal: On every navigation, re-set the cookie values
   // to refresh the maxAge countdown back to 30 days
   if (isLoggedIn.value) {
-    // Touch cookies to reset their expiry (re-assign same value)
-    isLoggedIn.value = isLoggedIn.value
-    if (authToken.value) authToken.value = authToken.value
-    if (userData.value) userData.value = userData.value
+    // Touch cookies to reset their expiry (clone then re-assign)
+    const _login = isLoggedIn.value
+    isLoggedIn.value = _login
+    if (authToken.value) {
+      const _token = authToken.value
+      authToken.value = _token
+    }
+    if (userData.value) {
+      const _data = userData.value
+      userData.value = _data
+    }
   }
 
   // Auth guard: redirect unauthenticated users to /login

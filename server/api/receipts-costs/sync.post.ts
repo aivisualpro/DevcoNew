@@ -3,17 +3,24 @@ import { ObjectId } from 'mongodb'
 import { useMongoClient } from '../../utils/mongodb'
 
 function sanitizeForFirestore(value: any): any {
-  if (value === null || value === undefined) return null
-  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function')) return value.toString()
-  if (value instanceof Date) return value.toISOString()
-  if (Buffer.isBuffer(value)) return value.toString('base64')
-  if (Array.isArray(value)) return value.map(sanitizeForFirestore)
+  if (value === null || value === undefined)
+    return null
+  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function'))
+    return value.toString()
+  if (value instanceof Date)
+    return value.toISOString()
+  if (Buffer.isBuffer(value))
+    return value.toString('base64')
+  if (Array.isArray(value))
+    return value.map(sanitizeForFirestore)
   if (typeof value === 'object' && value !== null) {
-    if (value.constructor && value.constructor !== Object) return value.toString()
+    if (value.constructor && value.constructor !== Object)
+      return value.toString()
     const result: Record<string, any> = {}
     for (const [k, v] of Object.entries(value)) {
       const sanitized = sanitizeForFirestore(v)
-      if (sanitized !== undefined) result[k] = sanitized
+      if (sanitized !== undefined)
+        result[k] = sanitized
     }
     return result
   }
@@ -51,14 +58,17 @@ export default defineEventHandler(async () => {
         email: (d.email || '').toLowerCase().trim(),
         legacyId: d.legacy_id ? d.legacy_id.toString() : null,
       }
-      if (info.email) empByEmail.set(info.email, info)
-      if (info.name) empByName.set(info.name.toLowerCase(), info)
-      if (info.legacyId) empByLegacyId.set(info.legacyId, info)
+      if (info.email)
+        empByEmail.set(info.email, info)
+      if (info.name)
+        empByName.set(info.name.toLowerCase(), info)
+      if (info.legacyId)
+        empByLegacyId.set(info.legacyId, info)
     })
 
     // Estimates: Legacy ID → Firebase ID
     const estimatesSnap = await firestore.collection('devcoEstimates').select('legacy_id', 'estimate').get()
-    const estimateByLegacyId = new Map<string, { firebaseId: string; estimateNumber: string }>()
+    const estimateByLegacyId = new Map<string, { firebaseId: string, estimateNumber: string }>()
     estimatesSnap.docs.forEach((doc) => {
       const d = doc.data()
       if (d.legacy_id) {
@@ -68,20 +78,24 @@ export default defineEventHandler(async () => {
 
     // Clients
     const clientsSnap = await firestore.collection('devcoClients').select('legacy_id', 'name').get()
-    const clientByLegacyId = new Map<string, { id: string; name: string }>()
+    const clientByLegacyId = new Map<string, { id: string, name: string }>()
     clientsSnap.docs.forEach((doc) => {
       const d = doc.data()
-      if (d.legacy_id) clientByLegacyId.set(d.legacy_id.toString(), { id: doc.id, name: d.name || '' })
+      if (d.legacy_id)
+        clientByLegacyId.set(d.legacy_id.toString(), { id: doc.id, name: d.name || '' })
     })
 
     // Helper
-    function resolveEmployee(raw: any): { firebaseId: string; name: string; avatar: string } | null {
-      if (!raw) return null
+    function resolveEmployee(raw: any): { firebaseId: string, name: string, avatar: string } | null {
+      if (!raw)
+        return null
       const str = raw.toString().trim()
       const strLower = str.toLowerCase()
       let info = empByLegacyId.get(str)
-      if (!info) info = empByEmail.get(strLower)
-      if (!info) info = empByName.get(strLower)
+      if (!info)
+        info = empByEmail.get(strLower)
+      if (!info)
+        info = empByName.get(strLower)
       return info || null
     }
 
@@ -109,7 +123,8 @@ export default defineEventHandler(async () => {
       const snap = await rcCollection.select('legacy_id').get()
       for (const doc of snap.docs) {
         const data = doc.data()
-        if (data.legacy_id) legacyIdToDocId.set(data.legacy_id, doc.id)
+        if (data.legacy_id)
+          legacyIdToDocId.set(data.legacy_id, doc.id)
       }
     }
     catch { /* Collection might not exist yet */ }
@@ -126,13 +141,15 @@ export default defineEventHandler(async () => {
 
       for (const estimate of chunk) {
         const items = estimate.receiptsAndCosts
-        if (!Array.isArray(items) || items.length === 0) continue
+        if (!Array.isArray(items) || items.length === 0)
+          continue
 
         const estimateLegacyId = estimate._id.toString()
         const estimateInfo = estimateByLegacyId.get(estimateLegacyId)
 
         for (const item of items) {
-          if (!item || typeof item !== 'object') continue
+          if (!item || typeof item !== 'object')
+            continue
 
           const rcLegacyId = item._id ? item._id.toString() : `${estimateLegacyId}-rc-${Math.random().toString(36).slice(2, 8)}`
           processedLegacyIds.add(rcLegacyId)
@@ -160,7 +177,7 @@ export default defineEventHandler(async () => {
           // ── Core fields ──
           payload.type = item.type || ''
           payload.vendor = item.vendor || ''
-          payload.amount = typeof item.amount === 'number' ? item.amount : parseFloat(item.amount) || 0
+          payload.amount = typeof item.amount === 'number' ? item.amount : Number.parseFloat(item.amount) || 0
           payload.date = item.date || ''
           payload.dueDate = item.dueDate || ''
           payload.remarks = item.remarks || ''
@@ -236,7 +253,8 @@ export default defineEventHandler(async () => {
     // ── Step 4: Remove orphaned docs ──
     const orphanedDocIds: string[] = []
     for (const [legacyId, docId] of legacyIdToDocId) {
-      if (!processedLegacyIds.has(legacyId)) orphanedDocIds.push(docId)
+      if (!processedLegacyIds.has(legacyId))
+        orphanedDocIds.push(docId)
     }
 
     if (orphanedDocIds.length > 0) {

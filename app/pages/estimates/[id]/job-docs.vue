@@ -4,18 +4,6 @@ const props = defineProps<{
   isLoading: boolean
 }>()
 
-const { setHeader } = usePageHeader()
-
-watchEffect(() => {
-  if (props.estimate) {
-    setHeader({
-      title: `${props.estimate.estimate || 'Estimate'} — Job Docs`,
-      description: props.estimate.projectName || '',
-      icon: 'i-lucide-folder-open',
-    })
-  }
-})
-
 // ─── Estimate number for filtering ───
 const estimateNumber = computed(() => props.estimate?.estimate || '')
 
@@ -49,7 +37,7 @@ const activeSubTab = ref('jha')
           :class="[
             activeSubTab === tab.key
               ? 'text-foreground'
-              : 'text-muted-foreground hover:text-foreground/80'
+              : 'text-muted-foreground hover:text-foreground/80',
           ]"
           @click="activeSubTab = tab.key"
         >
@@ -106,7 +94,7 @@ const activeSubTab = ref('jha')
       >
         <div
           class="size-16 rounded-2xl flex items-center justify-center mb-4"
-          :class="jobDocTabs.find(t => t.key === activeSubTab)?.bgColor + '/10'"
+          :class="`${jobDocTabs.find(t => t.key === activeSubTab)?.bgColor}/10`"
         >
           <Icon
             :name="jobDocTabs.find(t => t.key === activeSubTab)?.icon || 'i-lucide-file'"

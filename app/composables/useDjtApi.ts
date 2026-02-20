@@ -30,7 +30,7 @@ export interface DjtRecord {
   imageCount: number
   equipmentCount: number
   djtimages: string[]
-  equipmentUsed: { equipment: string; type: string; qty: number; cost: number }[]
+  equipmentUsed: { equipment: string, type: string, qty: number, cost: number }[]
   signatures: {
     employee: string
     employeeId?: string
@@ -59,7 +59,7 @@ const _isSyncing = ref(false)
 const _syncResult = ref<{
   success: boolean
   message: string
-  stats?: { total: number; created: number; updated: number; removed: number; duration: number }
+  stats?: { total: number, created: number, updated: number, removed: number, duration: number }
 } | null>(null)
 
 export function useDjtApi() {
@@ -67,8 +67,10 @@ export function useDjtApi() {
    * Fetch all DJT records from Firebase via our server API.
    */
   async function fetchAllDjt(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

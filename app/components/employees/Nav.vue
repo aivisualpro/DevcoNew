@@ -25,7 +25,8 @@ const currentActiveId = computed(() => {
 
 // Live counts based on fetched data
 function getCount(id: string): number {
-  if (!isFetched.value) return 0
+  if (!isFetched.value)
+    return 0
   const users = allUsers.value
   switch (id) {
     case 'super-admin': return users.filter(u => u.appRole === 'Super Admin').length

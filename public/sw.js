@@ -34,8 +34,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key)),
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key)),
       )
     }),
   )
@@ -49,13 +49,16 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
 
   // Skip non-GET requests
-  if (request.method !== 'GET') return
+  if (request.method !== 'GET')
+    return
 
   // Skip external requests
-  if (url.origin !== self.location.origin) return
+  if (url.origin !== self.location.origin)
+    return
 
   // API calls — network only (don't cache dynamic data)
-  if (url.pathname.startsWith('/api/')) return
+  if (url.pathname.startsWith('/api/'))
+    return
 
   // Static assets — cache-first strategy
   if (
@@ -63,12 +66,13 @@ self.addEventListener('fetch', (event) => {
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {
-        if (cached) return cached
+        if (cached)
+          return cached
         return fetch(request)
           .then((response) => {
             if (response.ok) {
               const clone = response.clone()
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+              caches.open(CACHE_NAME).then(cache => cache.put(request, clone))
             }
             return response
           })
@@ -85,7 +89,7 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Cache successful navigation responses
           const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone))
           return response
         })
         .catch(() => {
@@ -103,7 +107,7 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         if (response.ok) {
           const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone))
         }
         return response
       })

@@ -10,9 +10,11 @@ onMounted(() => {
 })
 
 function getCount(tabId: string): number {
-  if (!isFetched.value) return 0
+  if (!isFetched.value)
+    return 0
   const filter = clientTabFilters.find(t => t.id === tabId)
-  if (!filter) return 0
+  if (!filter)
+    return 0
   return allClients.value.filter(filter.filterFn).length
 }
 </script>

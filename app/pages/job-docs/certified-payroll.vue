@@ -12,8 +12,12 @@ setHeader({
       <div class="size-16 rounded-2xl bg-lime-500/10 flex items-center justify-center mb-4">
         <Icon name="i-lucide-badge-dollar-sign" class="size-8 text-lime-600" />
       </div>
-      <p class="text-sm font-semibold text-foreground">Certified Payroll</p>
-      <p class="text-xs mt-1">This section is coming soon.</p>
+      <p class="text-sm font-semibold text-foreground">
+        Certified Payroll
+      </p>
+      <p class="text-xs mt-1">
+        This section is coming soon.
+      </p>
     </div>
   </div>
 </template>

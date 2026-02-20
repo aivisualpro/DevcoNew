@@ -62,9 +62,11 @@ export function useUpcomingJobsApi() {
   /** Fetch all leads from the API (runs only once, cached globally) */
   async function fetchAllLeads(force = false) {
     // Skip if already fetched & not forced
-    if (_isFetched.value && !force) return
+    if (_isFetched.value && !force)
+      return
     // Skip if another call is already in-flight
-    if (_isFetching.value && !force) return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

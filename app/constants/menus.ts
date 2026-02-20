@@ -113,116 +113,11 @@ export const navMenu: NavMenu[] = [
         title: 'Tasks',
         icon: 'i-lucide-kanban',
         link: '/tasks',
-        new: true,
       },
       {
-        title: 'Gantt Chart',
-        icon: 'i-lucide-gantt-chart',
-        link: '/gantt',
-        new: true,
-      },
-    ],
-  },
-
-
-  {
-    heading: 'HR & Workforce',
-    items: [
-      {
-        title: 'Employees',
-        icon: 'i-lucide-user-round-check',
-        link: '/hr/employees',
-      },
-      {
-        title: 'Attendance',
-        icon: 'i-lucide-clock',
-        link: '/hr/attendance',
-      },
-      {
-        title: 'Payroll',
-        icon: 'i-lucide-banknote',
-        link: '/hr/payroll',
-      },
-      {
-        title: 'Recruitment',
-        icon: 'i-lucide-briefcase',
-        link: '/hr/recruitment',
-      },
-      {
-        title: 'Leave Mgmt',
-        icon: 'i-lucide-calendar-off',
-        link: '/hr/leaves',
-      },
-    ],
-  },
-  {
-    heading: 'Finance & Accounting',
-    items: [
-      {
-        title: 'Accounts',
-        icon: 'i-lucide-wallet',
-        link: '/finance/accounts',
-      },
-      {
-        title: 'Transactions',
-        icon: 'i-lucide-arrow-right-left',
-        link: '/finance/transactions',
-      },
-      {
-        title: 'Expenses',
-        icon: 'i-lucide-credit-card',
-        link: '/finance/expenses',
-      },
-      {
-        title: 'Tax Management',
-        icon: 'i-lucide-percent',
-        link: '/finance/taxes',
-      },
-      {
-        title: 'Balance Sheet',
-        icon: 'i-lucide-landmark',
-        link: '/finance/balance-sheet',
-        new: true,
-      },
-      {
-        title: 'Income Statement',
-        icon: 'i-lucide-receipt',
-        link: '/finance/income-statement',
-        new: true,
-      },
-      {
-        title: 'Financial Ratios',
-        icon: 'i-lucide-chart-no-axes-combined',
-        link: '/finance/ratios',
-        new: true,
-      },
-      {
-        title: 'Business Health',
-        icon: 'i-lucide-heart-pulse',
-        link: '/finance/business-health',
-        new: true,
-      },
-    ],
-  },
-
-  {
-    heading: 'Support',
-    items: [
-      {
-        title: 'Tickets',
-        icon: 'i-lucide-ticket',
-        link: '/support/tickets',
-      },
-      {
-        title: 'Knowledge Base',
-        icon: 'i-lucide-book-open',
-        link: '/support/knowledge-base',
-      },
-      {
-        title: 'Live Chat',
+        title: 'Chat',
         icon: 'i-lucide-message-circle',
-        link: '/support/chat',
-        new: true,
+        link: '/chat',
       },
     ],
   },
@@ -240,7 +135,32 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-pie-chart',
         link: '/reports/financial',
       },
+      {
+        title: 'Income Statement',
+        icon: 'i-lucide-receipt',
+        link: '/reports/income-statement',
+      },
+      {
+        title: 'Financial Ratios',
+        icon: 'i-lucide-chart-no-axes-combined',
+        link: '/reports/ratios',
+      },
+      {
+        title: 'Business Health',
+        icon: 'i-lucide-heart-pulse',
+        link: '/reports/business-health',
+      },
+    ],
+  },
 
+  {
+    heading: 'Support',
+    items: [
+      {
+        title: 'Tickets',
+        icon: 'i-lucide-ticket',
+        link: '/support/tickets',
+      },
     ],
   },
 

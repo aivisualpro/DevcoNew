@@ -10,7 +10,7 @@ definePageMeta({
       <!-- Logo + Welcome -->
       <div class="flex flex-col items-center gap-5 text-center">
         <div class="h-20 w-20 rounded-full overflow-hidden shadow-lg ring-2 ring-primary/10">
-          <img src="/devco-logo.png" alt="DEVCO" class="h-full w-full object-cover" />
+          <img src="/devco-logo.png" alt="DEVCO" class="h-full w-full object-cover">
         </div>
         <div class="grid gap-1.5">
           <h1 class="text-2xl font-bold tracking-tight text-foreground">

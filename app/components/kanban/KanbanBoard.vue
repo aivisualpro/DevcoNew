@@ -12,9 +12,8 @@ import Draggable from 'vuedraggable'
 import { useKanban } from '~/composables/useKanban'
 import CardFooter from '../ui/card/CardFooter.vue'
 
-const { board, addTask, updateTask, removeTask, setColumns, removeColumn, updateColumn, addSubtask, toggleSubtask, removeSubtask, addComment, removeComment } = useKanban()
+const { board, addTask, updateTask, removeTask, setColumns, removeColumn, updateColumn, addAttachment: _addAttachment, removeAttachment, addComment, removeComment, onTaskMoved } = useKanban()
 
-const newSubtaskTitle = ref('')
 const newCommentText = ref('')
 
 const df = new DateFormatter('en-US', {
@@ -131,8 +130,18 @@ function onUpdateColumn(evt: any, id: string) {
   updateColumn(id, evt.target.textContent?.trim())
 }
 
-function onTaskDrop() {
-  // ensure state is persisted after any move (within or across columns)
+function onTaskDrop(evt: any) {
+  // Persist status change when task is dragged to a different column
+  if (evt.to !== evt.from) {
+    const taskEl = evt.item
+    const taskId = taskEl?.__draggable_context?.element?.id
+    // Find which column the task landed in
+    const toColIdx = Array.from(evt.to.closest('[class*="w-["]')?.parentElement?.children || []).indexOf(evt.to.closest('[class*="w-["]'))
+    const toCol = board.value.columns[toColIdx]
+    if (taskId && toCol) {
+      onTaskMoved(taskId, toCol.id)
+    }
+  }
   nextTick(() => setColumns([...board.value.columns]))
 }
 
@@ -184,7 +193,7 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
     <!-- Columns Draggable wrapper -->
     <Draggable
       v-model="board.columns"
-      class="flex gap-4 min-w-max"
+      class="flex gap-4 w-full"
       item-key="id"
       :animation="180"
       handle=".col-handle"
@@ -192,7 +201,7 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
       @end="onColumnDrop"
     >
       <template #item="{ element: col }: { element: Column }">
-        <Card class="w-[272px] shrink-0 py-2 gap-4 self-start">
+        <Card class="min-w-[272px] flex-1 shrink-0 py-2 gap-4 self-start">
           <CardHeader class="flex flex-row items-center justify-between gap-2 px-2">
             <CardTitle class="font-semibold text-base flex items-center gap-2">
               <Icon name="lucide:grip-vertical" class="col-handle cursor-grab opacity-60" />
@@ -284,39 +293,31 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
                   </div>
                   <div class="mt-3 flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                      <!-- Subtasks Popover -->
+                      <!-- Attachments Popover -->
                       <Popover>
                         <PopoverTrigger as-child>
                           <button class="flex items-center text-sm text-muted-foreground gap-1 hover:text-foreground transition-colors cursor-pointer">
-                            <Icon name="lucide:square-check-big" class="size-3.5" />
-                            <span class="tabular-nums">{{ t.subtasks?.filter(s => s.completed).length || 0 }}/{{ t.subtasks?.length || 0 }}</span>
+                            <Icon name="lucide:paperclip" class="size-3.5" />
+                            <span class="tabular-nums">{{ t.attachments?.length || 0 }}</span>
                           </button>
                         </PopoverTrigger>
                         <PopoverContent class="w-72 p-0" align="start" @click.stop>
                           <div class="px-3 py-2 border-b">
                             <p class="text-sm font-semibold">
-                              Subtasks
+                              Attachments
                             </p>
                           </div>
                           <div class="max-h-48 overflow-y-auto">
-                            <div v-if="!t.subtasks?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">
-                              No subtasks yet
+                            <div v-if="!t.attachments?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">
+                              No attachments yet
                             </div>
-                            <div v-for="st in t.subtasks" :key="st.id" class="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 group">
-                              <Checkbox :checked="st.completed" @update:checked="toggleSubtask(col.id, t.id, st.id)" />
-                              <span class="text-sm flex-1" :class="st.completed ? 'line-through text-muted-foreground' : ''">{{ st.title }}</span>
-                              <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeSubtask(col.id, t.id, st.id)">
+                            <div v-for="att in t.attachments" :key="att.id" class="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 group">
+                              <Icon :name="att.type === 'image' ? 'lucide:image' : 'lucide:file'" class="size-3.5 text-muted-foreground shrink-0" />
+                              <span class="text-xs flex-1 truncate">{{ att.name }}</span>
+                              <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeAttachment(col.id, t.id, att.id)">
                                 <Icon name="lucide:x" class="size-3.5" />
                               </button>
                             </div>
-                          </div>
-                          <div class="border-t px-2 py-2">
-                            <form class="flex gap-1.5" @submit.prevent="() => { if (newSubtaskTitle.trim()) { addSubtask(col.id, t.id, newSubtaskTitle.trim()); newSubtaskTitle = '' } }">
-                              <Input v-model="newSubtaskTitle" placeholder="Add subtask..." class="h-7 text-xs" />
-                              <Button type="submit" size="icon" variant="ghost" class="size-7 shrink-0">
-                                <Icon name="lucide:plus" class="size-3.5" />
-                              </Button>
-                            </form>
                           </div>
                         </PopoverContent>
                       </Popover>

@@ -15,7 +15,7 @@ export interface Schedule {
   foremanDisplayName: string
   foremanAvatar: string
   assignees: string[]
-  assigneeDetails: { id: string; name: string; avatar: string }[]
+  assigneeDetails: { id: string, name: string, avatar: string }[]
   description: string
   service: string
   item: string
@@ -34,7 +34,7 @@ const _isSyncing = ref(false)
 const _syncResult = ref<{
   success: boolean
   message: string
-  stats?: { total: number; created: number; updated: number; removed: number; duration: number }
+  stats?: { total: number, created: number, updated: number, removed: number, duration: number }
 } | null>(null)
 
 export function useScheduledJobsApi() {
@@ -42,8 +42,10 @@ export function useScheduledJobsApi() {
    * Fetch all schedules from Firebase via our server API.
    */
   async function fetchAllSchedules(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

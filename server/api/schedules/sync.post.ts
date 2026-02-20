@@ -6,17 +6,24 @@ import { useMongoClient } from '../../utils/mongodb'
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
  */
 function sanitizeForFirestore(value: any): any {
-  if (value === null || value === undefined) return null
-  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function')) return value.toString()
-  if (value instanceof Date) return value.toISOString()
-  if (Buffer.isBuffer(value)) return value.toString('base64')
-  if (Array.isArray(value)) return value.map(sanitizeForFirestore)
+  if (value === null || value === undefined)
+    return null
+  if (value instanceof ObjectId || (value && typeof value.toHexString === 'function'))
+    return value.toString()
+  if (value instanceof Date)
+    return value.toISOString()
+  if (Buffer.isBuffer(value))
+    return value.toString('base64')
+  if (Array.isArray(value))
+    return value.map(sanitizeForFirestore)
   if (typeof value === 'object' && value !== null) {
-    if (value.constructor && value.constructor !== Object) return value.toString()
+    if (value.constructor && value.constructor !== Object)
+      return value.toString()
     const result: Record<string, any> = {}
     for (const [k, v] of Object.entries(value)) {
       const sanitized = sanitizeForFirestore(v)
-      if (sanitized !== undefined) result[k] = sanitized
+      if (sanitized !== undefined)
+        result[k] = sanitized
     }
     return result
   }
@@ -62,14 +69,17 @@ export default defineEventHandler(async () => {
         legacyId: d.legacy_id ? d.legacy_id.toString() : null,
       }
 
-      if (info.email) empByEmail.set(info.email, info)
-      if (info.name) empByName.set(info.name.toLowerCase(), info)
-      if (info.legacyId) empByLegacyId.set(info.legacyId, info)
+      if (info.email)
+        empByEmail.set(info.email, info)
+      if (info.name)
+        empByName.set(info.name.toLowerCase(), info)
+      if (info.legacyId)
+        empByLegacyId.set(info.legacyId, info)
     })
 
     // B. Clients: Build lookup for Legacy ID -> Firebase ID & Name
     const clientsSnap = await firestore.collection('devcoClients').select('legacy_id', 'name').get()
-    const clientByLegacyId = new Map<string, { id: string; name: string }>()
+    const clientByLegacyId = new Map<string, { id: string, name: string }>()
 
     clientsSnap.docs.forEach((doc) => {
       const d = doc.data()
@@ -113,26 +123,32 @@ export default defineEventHandler(async () => {
     catch { /* Collection might not exist yet */ }
 
     // Helper: resolve an employee reference (could be ObjectId string, name, or email)
-    function resolveEmployee(raw: any): { firebaseId: string; name: string; avatar: string } | null {
-      if (!raw) return null
+    function resolveEmployee(raw: any): { firebaseId: string, name: string, avatar: string } | null {
+      if (!raw)
+        return null
       const str = raw.toString().trim()
       const strLower = str.toLowerCase()
 
       // Priority 1: Legacy MongoDB ID
       let info = empByLegacyId.get(str)
       // Priority 2: Email
-      if (!info) info = empByEmail.get(strLower)
+      if (!info)
+        info = empByEmail.get(strLower)
       // Priority 3: Name
-      if (!info) info = empByName.get(strLower)
+      if (!info)
+        info = empByName.get(strLower)
 
       return info || null
     }
 
     // Helper: convert to boolean
     function toBool(val: any): boolean {
-      if (typeof val === 'boolean') return val
-      if (typeof val === 'string') return val.toLowerCase() === 'true' || val.toLowerCase() === 'yes' || val === '1'
-      if (typeof val === 'number') return val !== 0
+      if (typeof val === 'boolean')
+        return val
+      if (typeof val === 'string')
+        return val.toLowerCase() === 'true' || val.toLowerCase() === 'yes' || val === '1'
+      if (typeof val === 'number')
+        return val !== 0
       return !!val
     }
 
@@ -233,7 +249,7 @@ export default defineEventHandler(async () => {
             rawAssignees = schedule.assignees.split(',').map((s: string) => s.trim()).filter(Boolean)
           }
 
-          const resolvedAssignees: { firebaseId: string; name: string; avatar: string }[] = []
+          const resolvedAssignees: { firebaseId: string, name: string, avatar: string }[] = []
           const unresolvedAssignees: string[] = []
 
           for (const raw of rawAssignees) {

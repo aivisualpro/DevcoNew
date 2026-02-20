@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { clientColumns, clientTabFilters, type ClientTabFilter } from '~/constants/clients'
+import type { ClientTabFilter } from '~/constants/clients'
+import { clientColumns, clientTabFilters } from '~/constants/clients'
 
 const activeTab = inject<Ref<string>>('clientsActiveTab', ref('lte-10'))
 

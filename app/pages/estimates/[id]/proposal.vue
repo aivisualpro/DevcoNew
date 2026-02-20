@@ -1,20 +1,8 @@
 <script setup lang="ts">
-const props = defineProps<{
+const _props = defineProps<{
   estimate: any
   isLoading: boolean
 }>()
-
-const { setHeader } = usePageHeader()
-
-watchEffect(() => {
-  if (props.estimate) {
-    setHeader({
-      title: `${props.estimate.estimate || 'Estimate'} — Proposal`,
-      description: props.estimate.projectName || '',
-      icon: 'i-lucide-file-text',
-    })
-  }
-})
 </script>
 
 <template>
@@ -23,8 +11,12 @@ watchEffect(() => {
       <div class="size-16 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-4">
         <Icon name="i-lucide-file-text" class="size-8 text-rose-500" />
       </div>
-      <p class="text-sm font-semibold text-foreground">Proposal</p>
-      <p class="text-xs mt-1">Proposal generation for this estimate coming soon.</p>
+      <p class="text-sm font-semibold text-foreground">
+        Proposal
+      </p>
+      <p class="text-xs mt-1">
+        Proposal generation for this estimate coming soon.
+      </p>
     </div>
   </div>
 </template>

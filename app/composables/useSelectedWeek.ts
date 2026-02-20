@@ -1,4 +1,4 @@
-import { startOfWeek, endOfWeek, addWeeks, subWeeks, format } from 'date-fns'
+import { addWeeks, endOfWeek, format, startOfWeek, subWeeks } from 'date-fns'
 
 // Global shared state for the selected week
 const _weekStart = ref<Date>(startOfWeek(new Date(), { weekStartsOn: 1 })) // Monday

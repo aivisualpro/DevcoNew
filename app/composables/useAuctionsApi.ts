@@ -34,7 +34,7 @@ export interface AuctionCar {
   soldTo: string | null
   soldToName: string
   customerExpectedPrice: number
-  imageUrls: { title: string; url: string }[]
+  imageUrls: { title: string, url: string }[]
 }
 
 // ─── Global cache: fetch once, reuse across all Auction sub-routes ───
@@ -49,8 +49,10 @@ export function useAuctionsApi() {
 
   /** Fetch all cars from the API (runs only once, cached globally) */
   async function fetchAllCars(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

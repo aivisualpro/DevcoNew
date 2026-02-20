@@ -39,9 +39,6 @@ useHead({
   },
 })
 
-const title = 'DEVCOERP'
-const description = 'A comprehensive CRM platform by DEVCOERP.'
-
 const router = useRouter()
 
 defineShortcuts({

@@ -71,7 +71,8 @@ const paginatedItems = computed(() => {
 })
 
 function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value) return
+  if (page < 1 || page > totalPages.value)
+    return
   currentPage.value = page
 }
 
@@ -80,8 +81,8 @@ const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFil
 
 // ─── Formatters ───
 const badgeClasses: Record<string, string> = {
-  'Active': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  'Inactive': 'bg-red-500/10 text-red-600 border-red-500/20',
+  Active: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  Inactive: 'bg-red-500/10 text-red-600 border-red-500/20',
 }
 
 function getBadgeClass(value: string): string {
@@ -89,7 +90,8 @@ function getBadgeClass(value: string): string {
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
@@ -120,11 +122,13 @@ const pageNumbers = computed(() => {
     return Array.from({ length: total }, (_, i) => i + 1)
   }
   const pages: (number | string)[] = [1]
-  if (current > 3) pages.push('...')
+  if (current > 3)
+    pages.push('...')
   for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
     pages.push(i)
   }
-  if (current < total - 2) pages.push('...')
+  if (current < total - 2)
+    pages.push('...')
   pages.push(total)
   return pages
 })
@@ -164,8 +168,12 @@ const pageNumbers = computed(() => {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load clients</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load clients
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
       <Button variant="outline" size="sm" @click="handleRefresh">
         Retry
@@ -176,7 +184,9 @@ const pageNumbers = computed(() => {
     <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">Loading clients...</p>
+        <p class="text-sm">
+          Loading clients...
+        </p>
       </div>
     </div>
 

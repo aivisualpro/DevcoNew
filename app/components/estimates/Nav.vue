@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { estimateRouteFilters } from '~/constants/estimates'
 import { useEstimatesApi } from '~/composables/useEstimatesApi'
+import { estimateRouteFilters } from '~/constants/estimates'
 
 const route = useRoute()
 
@@ -21,9 +21,11 @@ const currentActiveId = computed(() => {
 const { allEstimates, isFetched } = useEstimatesApi()
 
 function getCount(filterKey: string) {
-  if (!isFetched.value) return 0
+  if (!isFetched.value)
+    return 0
   const filter = estimateRouteFilters[filterKey]
-  if (!filter) return 0
+  if (!filter)
+    return 0
   return allEstimates.value.filter(filter.filterFn).length
 }
 </script>
