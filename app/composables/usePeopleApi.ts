@@ -114,6 +114,62 @@ export function usePeopleApi() {
     await fetchAllUsers(true)
   }
 
+  /** Create a new employee */
+  async function createUser(data: Record<string, any>) {
+    const response = await $fetch<any>('/api/employees/create', {
+      method: 'POST',
+      body: data,
+    })
+
+    if (response?.success && response.employee) {
+      const newUser = {
+        ...response.employee,
+        id: response.employee._id || response.employee.id,
+        fullName: `${response.employee.firstName || ''} ${response.employee.lastName || ''}`.trim(),
+      }
+      _allUsers.value = [..._allUsers.value, newUser]
+      return newUser
+    }
+    throw new Error(response?.message || 'Failed to create employee')
+  }
+
+  /** Update an existing employee */
+  async function updateUser(id: string, data: Record<string, any>) {
+    const response = await $fetch<any>(`/api/employees/${id}`, {
+      method: 'PUT',
+      body: data,
+    })
+
+    if (response?.success && response.employee) {
+      const updated = {
+        ...response.employee,
+        id: response.employee._id || response.employee.id,
+        fullName: `${response.employee.firstName || ''} ${response.employee.lastName || ''}`.trim(),
+      }
+      // Update in-place in cache
+      const idx = _allUsers.value.findIndex(u => u.id === id || u._id === id)
+      if (idx >= 0) {
+        _allUsers.value[idx] = { ..._allUsers.value[idx], ...updated }
+        _allUsers.value = [..._allUsers.value] // trigger reactivity
+      }
+      return updated
+    }
+    throw new Error(response?.message || 'Failed to update employee')
+  }
+
+  /** Delete an employee */
+  async function deleteUser(id: string) {
+    const response = await $fetch<any>(`/api/employees/${id}`, {
+      method: 'DELETE',
+    })
+
+    if (response?.success) {
+      _allUsers.value = _allUsers.value.filter(u => u.id !== id && u._id !== id)
+      return true
+    }
+    throw new Error(response?.message || 'Failed to delete employee')
+  }
+
   return {
     allUsers: _allUsers,
     isLoading: _isFetching,
@@ -124,5 +180,8 @@ export function usePeopleApi() {
     fetchAllUsers,
     refreshUsers,
     syncToFirebase,
+    createUser,
+    updateUser,
+    deleteUser,
   }
 }

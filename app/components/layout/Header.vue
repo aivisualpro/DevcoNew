@@ -2,8 +2,8 @@
 const route = useRoute()
 const { headerState, clearHeader } = usePageHeader()
 
-// Only clear header when the top-level route segment changes (not sub-tab navigation)
-const topSegment = computed(() => route.path.split('/').filter(Boolean).slice(0, 2).join('/'))
+// Only clear header when the top-level route section changes (e.g. employees → clients)
+const topSegment = computed(() => route.path.split('/').filter(Boolean)[0] || '')
 watch(topSegment, () => {
   clearHeader()
 })

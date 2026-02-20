@@ -10,11 +10,6 @@ export const navMenu: NavMenu[] = [
         link: '/',
       },
       {
-        title: 'Scheduled Jobs',
-        icon: 'i-lucide-calendar-days',
-        link: '/scheduled-jobs',
-      },
-      {
         title: 'Employees',
         icon: 'i-lucide-user-round-check',
         link: '/employees/super-admin',
@@ -28,6 +23,11 @@ export const navMenu: NavMenu[] = [
         title: 'Estimates',
         icon: 'i-lucide-scroll-text',
         link: '/estimates/all',
+      },
+      {
+        title: 'Scheduled Jobs',
+        icon: 'i-lucide-calendar-days',
+        link: '/scheduled-jobs',
       },
       {
         title: 'Time Cards',

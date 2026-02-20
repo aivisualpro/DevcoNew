@@ -25,13 +25,32 @@ const {
   syncResult,
 } = useClientsApi()
 
-// Fetch clients once
-onMounted(() => {
-  fetchAllClients()
-})
+// Eagerly fetch (uses global cache — instant if already loaded)
+fetchAllClients()
 
 // ─── UI State ───
 const search = ref('')
+
+// ─── Sorting ───
+type SortDir = 'asc' | 'desc' | null
+const sortKey = ref<string>('name')
+const sortDir = ref<SortDir>('asc')
+
+function toggleSort(key: string) {
+  if (sortKey.value === key) {
+    if (sortDir.value === 'desc') {
+      sortDir.value = 'asc'
+    }
+    else if (sortDir.value === 'asc') {
+      sortDir.value = null
+      sortKey.value = ''
+    }
+  }
+  else {
+    sortKey.value = key
+    sortDir.value = 'desc'
+  }
+}
 
 // ─── Base filtered list ───
 const baseFilteredItems = computed(() => allClients.value.filter(props.filterFn))
@@ -56,28 +75,58 @@ const filteredItems = computed(() => {
   return result
 })
 
-// ─── Client-side pagination ───
-const PER_PAGE = 30
-const currentPage = ref(1)
+// ─── Sorting logic ───
+function compare(a: any, b: any, key: string, dir: SortDir): number {
+  const valA = a[key] ?? ''
+  const valB = b[key] ?? ''
 
-watch(search, () => { currentPage.value = 1 })
+  if (typeof valA === 'number' && typeof valB === 'number') {
+    return dir === 'asc' ? valA - valB : valB - valA
+  }
 
-const totalFiltered = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
-
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * PER_PAGE
-  return filteredItems.value.slice(start, start + PER_PAGE)
-})
-
-function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value)
-    return
-  currentPage.value = page
+  const strA = String(valA).toLowerCase()
+  const strB = String(valB).toLowerCase()
+  const cmp = strA.localeCompare(strB)
+  return dir === 'asc' ? cmp : -cmp
 }
 
-const showingFrom = computed(() => totalFiltered.value === 0 ? 0 : ((currentPage.value - 1) * PER_PAGE) + 1)
-const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFiltered.value))
+const sortedItems = computed(() => {
+  const items = [...filteredItems.value]
+  if (sortKey.value && sortDir.value) {
+    items.sort((a, b) => compare(a, b, sortKey.value, sortDir.value))
+  }
+  return items
+})
+
+// ─── Infinite scroll (30 per batch) ───
+const BATCH_SIZE = 30
+const visibleCount = ref(BATCH_SIZE)
+const scrollContainerRef = ref<HTMLElement | null>(null)
+
+// Reset visible count on search/sort/filter change
+watch([search, sortKey, sortDir, () => props.filterFn], () => {
+  visibleCount.value = BATCH_SIZE
+})
+
+const visibleItems = computed(() => sortedItems.value.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < sortedItems.value.length)
+const totalFiltered = computed(() => filteredItems.value.length)
+
+function loadMore() {
+  if (hasMore.value) {
+    visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, sortedItems.value.length)
+  }
+}
+
+// Scroll handler for infinite loading
+function handleScroll(e: Event) {
+  const target = e.target as HTMLElement
+  if (!target) return
+  const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 200
+  if (nearBottom && hasMore.value) {
+    loadMore()
+  }
+}
 
 // ─── Formatters ───
 const badgeClasses: Record<string, string> = {
@@ -113,25 +162,6 @@ async function handleRefresh() {
     toast.success('Data refreshed from server')
   }
 }
-
-// ─── Pagination page numbers with ellipsis ───
-const pageNumbers = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  const pages: (number | string)[] = [1]
-  if (current > 3)
-    pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i)
-  }
-  if (current < total - 2)
-    pages.push('...')
-  pages.push(total)
-  return pages
-})
 </script>
 
 <template>
@@ -191,20 +221,33 @@ const pageNumbers = computed(() => {
     </div>
 
     <!-- Table -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
+    <div v-else-if="!fetchError" ref="scrollContainerRef" class="flex-1 min-h-0 overflow-auto" @scroll="handleScroll">
       <Table>
         <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
           <TableRow>
-            <TableHead v-for="col in columns" :key="col.key">
-              {{ col.label }}
+            <TableHead
+              v-for="col in columns"
+              :key="col.key"
+              class="cursor-pointer select-none hover:text-foreground transition-colors"
+              @click="toggleSort(col.key)"
+            >
+              <div class="flex items-center gap-1">
+                {{ col.label }}
+                <Icon
+                  v-if="sortKey === col.key && sortDir"
+                  :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
+                  class="size-3 text-primary"
+                />
+              </div>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="item in paginatedItems"
+            v-for="item in visibleItems"
             :key="item.id || item._id"
-            class="group"
+            class="group cursor-pointer hover:bg-muted/50 transition-colors"
+            @click="navigateTo(`/clients/detail/${item.id || item._id}`)"
           >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Badge -->
@@ -229,7 +272,7 @@ const pageNumbers = computed(() => {
               <span v-else class="text-sm">{{ item[col.key] ?? '—' }}</span>
             </TableCell>
           </TableRow>
-          <TableRow v-if="paginatedItems.length === 0 && !isLoading">
+          <TableRow v-if="visibleItems.length === 0 && !isLoading">
             <TableCell :colspan="columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
@@ -239,33 +282,23 @@ const pageNumbers = computed(() => {
           </TableRow>
         </TableBody>
       </Table>
+
+      <!-- Loading more indicator -->
+      <div v-if="hasMore" class="flex items-center justify-center py-4 text-muted-foreground">
+        <Icon name="i-lucide-loader-2" class="size-4 animate-spin mr-2" />
+        <span class="text-xs">Scroll for more...</span>
+      </div>
     </div>
 
-    <!-- Pagination Bar -->
-    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
+    <!-- Footer status bar -->
+    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between gap-2">
       <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ showingFrom }} to {{ showingTo }} out of {{ totalFiltered }} records
+        Showing {{ visibleItems.length }} of {{ totalFiltered }} records
       </p>
-      <div v-if="totalPages > 1" class="flex items-center gap-1">
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-          <Icon name="i-lucide-chevron-left" class="size-3.5" />
-        </Button>
-        <template v-for="pg in pageNumbers" :key="pg">
-          <Button
-            v-if="pg !== '...'"
-            :variant="pg === currentPage ? 'default' : 'outline'"
-            size="icon"
-            class="size-7 text-xs"
-            @click="goToPage(pg as number)"
-          >
-            {{ pg }}
-          </Button>
-          <span v-else class="px-1 text-xs text-muted-foreground">…</span>
-        </template>
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-          <Icon name="i-lucide-chevron-right" class="size-3.5" />
-        </Button>
-      </div>
+      <p v-if="sortKey && sortDir" class="text-xs text-muted-foreground flex items-center gap-1">
+        <Icon :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3" />
+        Sorted by {{ columns.find(c => c.key === sortKey)?.label || sortKey }}
+      </p>
     </div>
   </div>
 </template>

@@ -27,15 +27,65 @@ const {
   refreshUsers,
   isSyncing,
   syncResult,
+  createUser,
 } = usePeopleApi()
 
-// Fetch users once
-onMounted(() => {
-  fetchAllUsers()
-})
+// Eagerly fetch (uses global cache — instant if already loaded)
+fetchAllUsers()
 
 // ─── UI State ───
 const search = ref('')
+
+// ─── Sorting ───
+type SortDir = 'asc' | 'desc' | null
+const sortKey = ref<string>('fullName')
+const sortDir = ref<SortDir>('asc')
+
+function toggleSort(key: string) {
+  if (sortKey.value === key) {
+    if (sortDir.value === 'desc') {
+      sortDir.value = 'asc'
+    }
+    else if (sortDir.value === 'asc') {
+      sortDir.value = null
+      sortKey.value = ''
+    }
+    else { sortDir.value = 'desc'; sortKey.value = key }
+  }
+  else {
+    sortKey.value = key
+    sortDir.value = 'desc'
+  }
+}
+
+function getSortIcon(key: string): string {
+  if (sortKey.value !== key || !sortDir.value)
+    return 'i-lucide-arrow-up-down'
+  return sortDir.value === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'
+}
+
+function compare(a: any, b: any, key: string, dir: SortDir): number {
+  if (!dir)
+    return 0
+  const av = a[key]
+  const bv = b[key]
+
+  if (av == null && bv == null) return 0
+  if (av == null) return 1
+  if (bv == null) return -1
+
+  let result = 0
+  if (key === 'dateHired' || key === 'createdAt') {
+    result = new Date(av).getTime() - new Date(bv).getTime()
+  }
+  else if (typeof av === 'number' && typeof bv === 'number') {
+    result = av - bv
+  }
+  else {
+    result = String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' })
+  }
+  return dir === 'asc' ? result : -result
+}
 
 // ─── Base filtered list (before search) for status counts ───
 const baseFilteredItems = computed(() => allUsers.value.filter(props.filterFn))
@@ -49,7 +99,6 @@ const rejectedCount = computed(() => baseFilteredItems.value.filter(u => u.appro
 const filteredItems = computed(() => {
   let result = baseFilteredItems.value
 
-  // Apply search across visible columns
   if (search.value) {
     const q = search.value.toLowerCase()
     result = result.filter(item =>
@@ -62,28 +111,44 @@ const filteredItems = computed(() => {
   return result
 })
 
-// ─── Client-side pagination (30 per page) ───
-const PER_PAGE = 30
-const currentPage = ref(1)
-
-watch(search, () => { currentPage.value = 1 })
-
-const totalFiltered = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
-
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * PER_PAGE
-  return filteredItems.value.slice(start, start + PER_PAGE)
+// ─── Sorted items ───
+const sortedItems = computed(() => {
+  const items = [...filteredItems.value]
+  if (sortKey.value && sortDir.value) {
+    items.sort((a, b) => compare(a, b, sortKey.value, sortDir.value))
+  }
+  return items
 })
 
-function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value)
-    return
-  currentPage.value = page
+// ─── Infinite scroll (30 per batch) ───
+const BATCH_SIZE = 30
+const visibleCount = ref(BATCH_SIZE)
+const scrollContainerRef = ref<HTMLElement | null>(null)
+
+// Reset visible count on search/sort/filter change
+watch([search, sortKey, sortDir, () => props.filterFn], () => {
+  visibleCount.value = BATCH_SIZE
+})
+
+const visibleItems = computed(() => sortedItems.value.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < sortedItems.value.length)
+const totalFiltered = computed(() => filteredItems.value.length)
+
+function loadMore() {
+  if (hasMore.value) {
+    visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, sortedItems.value.length)
+  }
 }
 
-const showingFrom = computed(() => totalFiltered.value === 0 ? 0 : ((currentPage.value - 1) * PER_PAGE) + 1)
-const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFiltered.value))
+// Scroll handler for infinite loading
+function handleScroll(e: Event) {
+  const target = e.target as HTMLElement
+  if (!target) return
+  const threshold = 200
+  if (target.scrollHeight - target.scrollTop - target.clientHeight < threshold) {
+    loadMore()
+  }
+}
 
 // ─── Formatters ───
 const badgeClasses: Record<string, string> = {
@@ -123,7 +188,6 @@ function getInitials(name: string): string {
 async function handleRefresh() {
   await refreshUsers()
 
-  // Show sync result
   if (syncResult.value?.success && syncResult.value.stats) {
     const s = syncResult.value.stats
     const dur = (s.duration / 1000).toFixed(1)
@@ -137,24 +201,59 @@ async function handleRefresh() {
   }
 }
 
-// ─── Pagination page numbers with ellipsis ───
-const pageNumbers = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  const pages: (number | string)[] = [1]
-  if (current > 3)
-    pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i)
-  }
-  if (current < total - 2)
-    pages.push('...')
-  pages.push(total)
-  return pages
+// ─── Add Employee Dialog ───
+const showAddDialog = ref(false)
+const isCreating = ref(false)
+const newEmployee = ref({
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  mobile: '',
+  appRole: 'Employee',
+  companyPosition: '',
+  designation: '',
+  dateHired: '',
+  status: 'Active',
 })
+
+function resetNewEmployee() {
+  newEmployee.value = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    mobile: '',
+    appRole: 'Employee',
+    companyPosition: '',
+    designation: '',
+    dateHired: '',
+    status: 'Active',
+  }
+}
+
+async function handleCreateEmployee() {
+  if (!newEmployee.value.firstName || !newEmployee.value.lastName || !newEmployee.value.email) {
+    toast.error('First name, last name, and email are required')
+    return
+  }
+
+  isCreating.value = true
+  try {
+    const created = await createUser(newEmployee.value)
+    toast.success(`${created.fullName} has been added`)
+    showAddDialog.value = false
+    resetNewEmployee()
+    // Navigate to the new employee detail
+    navigateTo(`/employees/detail/${created.id}`)
+  }
+  catch (err: any) {
+    toast.error(err?.message || 'Failed to create employee')
+  }
+  finally {
+    isCreating.value = false
+  }
+}
 </script>
 
 <template>
@@ -187,6 +286,10 @@ const pageNumbers = computed(() => {
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading || isSyncing }" />
         {{ isSyncing ? 'Syncing...' : 'Refresh' }}
       </Button>
+      <Button size="sm" class="h-8" @click="showAddDialog = true">
+        <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
+        Add Employee
+      </Button>
     </Teleport>
   </ClientOnly>
 
@@ -207,29 +310,31 @@ const pageNumbers = computed(() => {
       </Button>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
-      <div class="flex flex-col items-center gap-3 text-muted-foreground">
-        <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">
-          Loading employees...
-        </p>
-      </div>
-    </div>
-
-    <!-- Table (scrollable) -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
+    <!-- Table (scrollable with infinite scroll) -->
+    <div v-if="!fetchError" ref="scrollContainerRef" class="flex-1 min-h-0 overflow-auto" @scroll="handleScroll">
       <Table>
         <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
           <TableRow>
-            <TableHead v-for="col in columns" :key="col.key">
-              {{ col.label }}
+            <TableHead
+              v-for="col in columns"
+              :key="col.key"
+              class="text-[10px] h-8 select-none cursor-pointer hover:bg-muted/80 transition-colors group/th"
+              @click="toggleSort(col.key)"
+            >
+              <div class="flex items-center gap-1">
+                <span>{{ col.label }}</span>
+                <Icon
+                  :name="getSortIcon(col.key)"
+                  class="size-3 shrink-0 transition-opacity"
+                  :class="sortKey === col.key && sortDir ? 'text-primary opacity-100' : 'opacity-0 group-hover/th:opacity-40'"
+                />
+              </div>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="item in paginatedItems"
+            v-for="item in visibleItems"
             :key="item.id || item._id"
             class="group cursor-pointer hover:bg-muted/50"
             @click="navigateTo(`/employees/detail/${item.id || item._id}`)"
@@ -243,14 +348,14 @@ const pageNumbers = computed(() => {
                     {{ getInitials(item[col.key]) }}
                   </AvatarFallback>
                 </Avatar>
-                <span class="font-medium">{{ item[col.key] || '—' }}</span>
+                <span class="font-medium text-[10px]">{{ item[col.key] || '—' }}</span>
               </div>
               <!-- Badge -->
               <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">
                 {{ item[col.key] || '—' }}
               </Badge>
               <!-- Date -->
-              <span v-else-if="col.type === 'date'" class="text-muted-foreground text-sm">
+              <span v-else-if="col.type === 'date'" class="text-muted-foreground text-[10px]">
                 {{ formatDate(item[col.key]) }}
               </span>
               <!-- Tags -->
@@ -260,10 +365,21 @@ const pageNumbers = computed(() => {
                 </Badge>
               </div>
               <!-- Default text -->
-              <span v-else class="text-sm">{{ item[col.key] ?? '—' }}</span>
+              <span v-else class="text-[10px]">{{ item[col.key] ?? '—' }}</span>
             </TableCell>
           </TableRow>
-          <TableRow v-if="paginatedItems.length === 0 && !isLoading">
+          <!-- Loading rows -->
+          <TableRow v-if="!isFetched && !fetchError">
+            <TableCell :colspan="columns.length" class="h-32 text-center">
+              <div class="flex flex-col items-center gap-2 text-muted-foreground">
+                <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
+                <p class="text-sm">
+                  Loading employees...
+                </p>
+              </div>
+            </TableCell>
+          </TableRow>
+          <TableRow v-else-if="visibleItems.length === 0">
             <TableCell :colspan="columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
@@ -273,33 +389,112 @@ const pageNumbers = computed(() => {
           </TableRow>
         </TableBody>
       </Table>
-    </div>
 
-    <!-- Pagination Bar (pinned to bottom) -->
-    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
-      <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ showingFrom }} to {{ showingTo }} out of {{ totalFiltered }} records
-      </p>
-      <div v-if="totalPages > 1" class="flex items-center gap-1">
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-          <Icon name="i-lucide-chevron-left" class="size-3.5" />
-        </Button>
-        <template v-for="pg in pageNumbers" :key="pg">
-          <Button
-            v-if="pg !== '...'"
-            :variant="pg === currentPage ? 'default' : 'outline'"
-            size="icon"
-            class="size-7 text-xs"
-            @click="goToPage(pg as number)"
-          >
-            {{ pg }}
-          </Button>
-          <span v-else class="px-1 text-xs text-muted-foreground">…</span>
-        </template>
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-          <Icon name="i-lucide-chevron-right" class="size-3.5" />
-        </Button>
+      <!-- Loading more indicator -->
+      <div v-if="hasMore" class="flex items-center justify-center py-4 text-muted-foreground">
+        <Icon name="i-lucide-loader-2" class="size-4 animate-spin mr-2" />
+        <span class="text-xs">Scroll for more...</span>
       </div>
     </div>
+
+    <!-- Footer status bar -->
+    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between gap-2">
+      <p class="text-xs text-muted-foreground tabular-nums">
+        Showing {{ visibleItems.length }} of {{ totalFiltered }} records
+      </p>
+      <p v-if="sortKey && sortDir" class="text-xs text-muted-foreground flex items-center gap-1">
+        <Icon :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3" />
+        Sorted by {{ columns.find(c => c.key === sortKey)?.label || sortKey }}
+      </p>
+    </div>
   </div>
+
+  <!-- ─── Add Employee Dialog ─── -->
+  <Dialog :open="showAddDialog" @update:open="showAddDialog = $event">
+    <DialogContent class="sm:max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Add Employee</DialogTitle>
+        <DialogDescription>
+          Fill in the details to create a new employee.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="grid gap-4 py-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="grid gap-1.5">
+            <Label for="add-firstName" class="text-xs">First Name *</Label>
+            <Input id="add-firstName" v-model="newEmployee.firstName" placeholder="John" class="h-8 text-sm" />
+          </div>
+          <div class="grid gap-1.5">
+            <Label for="add-lastName" class="text-xs">Last Name *</Label>
+            <Input id="add-lastName" v-model="newEmployee.lastName" placeholder="Doe" class="h-8 text-sm" />
+          </div>
+        </div>
+        <div class="grid gap-1.5">
+          <Label for="add-email" class="text-xs">Email *</Label>
+          <Input id="add-email" v-model="newEmployee.email" type="email" placeholder="john@devco-inc.com" class="h-8 text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="grid gap-1.5">
+            <Label for="add-phone" class="text-xs">Phone</Label>
+            <Input id="add-phone" v-model="newEmployee.phone" placeholder="(555) 000-0000" class="h-8 text-sm" />
+          </div>
+          <div class="grid gap-1.5">
+            <Label for="add-mobile" class="text-xs">Mobile</Label>
+            <Input id="add-mobile" v-model="newEmployee.mobile" placeholder="(555) 000-0000" class="h-8 text-sm" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="grid gap-1.5">
+            <Label class="text-xs">App Role</Label>
+            <Select v-model="newEmployee.appRole">
+              <SelectTrigger class="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Super Admin">Super Admin</SelectItem>
+                <SelectItem value="Admin">Admin</SelectItem>
+                <SelectItem value="Employee">Employee</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="grid gap-1.5">
+            <Label class="text-xs">Status</Label>
+            <Select v-model="newEmployee.status">
+              <SelectTrigger class="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="grid gap-1.5">
+            <Label for="add-position" class="text-xs">Company Position</Label>
+            <Input id="add-position" v-model="newEmployee.companyPosition" placeholder="Foreman" class="h-8 text-sm" />
+          </div>
+          <div class="grid gap-1.5">
+            <Label for="add-designation" class="text-xs">Designation</Label>
+            <Input id="add-designation" v-model="newEmployee.designation" placeholder="Project Manager" class="h-8 text-sm" />
+          </div>
+        </div>
+        <div class="grid gap-1.5">
+          <Label for="add-dateHired" class="text-xs">Date Hired</Label>
+          <Input id="add-dateHired" v-model="newEmployee.dateHired" type="date" class="h-8 text-sm" />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" size="sm" @click="showAddDialog = false; resetNewEmployee()">
+          Cancel
+        </Button>
+        <Button size="sm" :disabled="isCreating" @click="handleCreateEmployee">
+          <Icon v-if="isCreating" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
+          <Icon v-else name="i-lucide-plus" class="mr-1.5 size-3.5" />
+          {{ isCreating ? 'Creating...' : 'Add Employee' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
