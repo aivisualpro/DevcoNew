@@ -6,7 +6,33 @@
 export default defineEventHandler(async () => {
   try {
     const firestore = useFirestoreAdmin()
-    const snapshot = await firestore.collection('devcoSchedules').get()
+    // Only select the fields the listing and day-filter actually use
+    const snapshot = await firestore
+      .collection('devcoSchedules')
+      .select(
+        'title',
+        'fromDate',
+        'toDate',
+        'customerId',
+        'customerName',
+        'estimate',
+        'projectManager',
+        'projectManagerName',
+        'projectManagerAvatar',
+        'foremanName',
+        'foremanDisplayName',
+        'foremanAvatar',
+        'assignees',
+        'assigneeDetails',
+        'description',
+        'service',
+        'item',
+        'notifyAssignees',
+        'perDiem',
+        'status',
+        'legacy_id',
+      )
+      .get()
 
     const schedules = snapshot.docs.map((doc) => {
       const data = doc.data()

@@ -189,11 +189,11 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
 </script>
 
 <template>
-  <div class="flex gap-4 overflow-x-auto overflow-y-hidden pb-4">
+  <div class="flex gap-4 overflow-x-auto overflow-y-hidden pb-4 h-full">
     <!-- Columns Draggable wrapper -->
     <Draggable
       v-model="board.columns"
-      class="flex gap-4 w-full"
+      class="flex gap-4 w-full h-full"
       item-key="id"
       :animation="180"
       handle=".col-handle"
@@ -201,7 +201,7 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
       @end="onColumnDrop"
     >
       <template #item="{ element: col }: { element: Column }">
-        <Card class="min-w-[272px] flex-1 shrink-0 py-2 gap-4 self-start">
+        <Card class="min-w-[272px] flex-1 shrink-0 py-2 gap-4 flex flex-col h-full">
           <CardHeader class="flex flex-row items-center justify-between gap-2 px-2">
             <CardTitle class="font-semibold text-base flex items-center gap-2">
               <Icon name="lucide:grip-vertical" class="col-handle cursor-grab opacity-60" />

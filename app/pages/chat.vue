@@ -1,148 +1,85 @@
 <script setup lang="ts">
+import { toast } from 'vue-sonner'
+
 const { setHeader } = usePageHeader()
 setHeader({ title: 'Chat', icon: 'i-lucide-message-circle' })
 
-// ─── Types ───
-interface Message {
-  id: string
-  text: string
-  sender: 'me' | 'them'
-  time: string
-  read?: boolean
-}
-
-interface Contact {
-  id: string
-  name: string
-  avatar: string
-  role: string
-  online: boolean
-  lastMessage: string
-  lastTime: string
-  unread: number
-  messages: Message[]
-}
-
-// ─── Demo Contacts ───
-const contacts = ref<Contact[]>([
-  {
-    id: '1',
-    name: 'John Martinez',
-    avatar: 'JM',
-    role: 'Foreman',
-    online: true,
-    lastMessage: 'The crew is ready for tomorrow',
-    lastTime: '2:15 PM',
-    unread: 2,
-    messages: [
-      { id: 'm1', text: 'Hey, how\'s the 5th Street project going?', sender: 'me', time: '1:30 PM', read: true },
-      { id: 'm2', text: 'Going well! We finished the trenching ahead of schedule', sender: 'them', time: '1:32 PM' },
-      { id: 'm3', text: 'That\'s great news. Any issues with the soil conditions?', sender: 'me', time: '1:45 PM', read: true },
-      { id: 'm4', text: 'Some rocky areas near the east side but we managed', sender: 'them', time: '1:48 PM' },
-      { id: 'm5', text: 'Perfect. I\'ll update the client.', sender: 'me', time: '2:00 PM', read: true },
-      { id: 'm6', text: 'The crew is ready for tomorrow', sender: 'them', time: '2:15 PM' },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Sarah Chen',
-    avatar: 'SC',
-    role: 'Project Manager',
-    online: true,
-    lastMessage: 'Updated the estimate for Oak Ave',
-    lastTime: '1:45 PM',
-    unread: 0,
-    messages: [
-      { id: 'm1', text: 'Sarah, can you review EST-26-0142?', sender: 'me', time: '11:00 AM', read: true },
-      { id: 'm2', text: 'Sure, I\'ll take a look this afternoon', sender: 'them', time: '11:15 AM' },
-      { id: 'm3', text: 'Updated the estimate for Oak Ave', sender: 'them', time: '1:45 PM' },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Mike Rodriguez',
-    avatar: 'MR',
-    role: 'Equipment Operator',
-    online: false,
-    lastMessage: 'Backhoe needs maintenance by Friday',
-    lastTime: 'Yesterday',
-    unread: 0,
-    messages: [
-      { id: 'm1', text: 'Mike, the CAT 420 is scheduled for Elm St next week', sender: 'me', time: 'Yesterday 9:00 AM', read: true },
-      { id: 'm2', text: 'Got it. I\'ll prep it this weekend', sender: 'them', time: 'Yesterday 9:30 AM' },
-      { id: 'm3', text: 'Also, the backhoe is making some noise', sender: 'them', time: 'Yesterday 2:00 PM' },
-      { id: 'm4', text: 'Backhoe needs maintenance by Friday', sender: 'them', time: 'Yesterday 2:01 PM' },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Lisa Park',
-    avatar: 'LP',
-    role: 'Office Manager',
-    online: true,
-    lastMessage: 'Payroll submitted for this week ✅',
-    lastTime: '12:30 PM',
-    unread: 1,
-    messages: [
-      { id: 'm1', text: 'Lisa, are the timesheets in for this week?', sender: 'me', time: '10:00 AM', read: true },
-      { id: 'm2', text: 'Almost! Missing 2 from the night crew', sender: 'them', time: '10:20 AM' },
-      { id: 'm3', text: 'I\'ll follow up with them', sender: 'me', time: '10:25 AM', read: true },
-      { id: 'm4', text: 'Payroll submitted for this week ✅', sender: 'them', time: '12:30 PM' },
-    ],
-  },
-  {
-    id: '5',
-    name: 'David Kim',
-    avatar: 'DK',
-    role: 'Subcontractor',
-    online: false,
-    lastMessage: 'Invoice #4521 sent',
-    lastTime: 'Monday',
-    unread: 0,
-    messages: [
-      { id: 'm1', text: 'David, when can you start on the drainage work?', sender: 'me', time: 'Monday 8:00 AM', read: true },
-      { id: 'm2', text: 'We can start Wednesday if permits are ready', sender: 'them', time: 'Monday 8:45 AM' },
-      { id: 'm3', text: 'Permits are good to go', sender: 'me', time: 'Monday 9:00 AM', read: true },
-      { id: 'm4', text: 'Invoice #4521 sent', sender: 'them', time: 'Monday 4:00 PM' },
-    ],
-  },
-  {
-    id: '6',
-    name: 'Amanda Torres',
-    avatar: 'AT',
-    role: 'Safety Officer',
-    online: false,
-    lastMessage: 'JHA approved for the downtown site',
-    lastTime: 'Feb 17',
-    unread: 0,
-    messages: [
-      { id: 'm1', text: 'Amanda, did you review the JHA for downtown?', sender: 'me', time: 'Feb 17 2:00 PM', read: true },
-      { id: 'm2', text: 'JHA approved for the downtown site', sender: 'them', time: 'Feb 17 3:30 PM' },
-    ],
-  },
-])
-
-const activeContactId = ref('1')
+// ─── State ───
+const chats = ref<any[]>([])
+const isLoading = ref(true)
+const isSyncing = ref(false)
+const activeContactId = ref('')
 const newMessage = ref('')
 const searchQuery = ref('')
 const messagesContainer = ref<HTMLElement>()
 
-const activeContact = computed(() => contacts.value.find(c => c.id === activeContactId.value))
+// ─── Fetch chats from Firebase ───
+async function fetchChats() {
+  isLoading.value = true
+  try {
+    const res = await $fetch<any>('/api/chats')
+    chats.value = res.chats || []
+    // Auto-select first chat if none selected
+    if (chats.value.length > 0 && !activeContactId.value) {
+      activeContactId.value = chats.value[0]._id
+    }
+    nextTick(() => scrollToBottom())
+  }
+  catch (err: any) {
+    const msg = err?.data?.message || err?.statusMessage || 'Failed to load chats'
+    toast.error('Error', { description: msg })
+  }
+  finally {
+    isLoading.value = false
+  }
+}
 
-const filteredContacts = computed(() => {
-  if (!searchQuery.value)
-    return contacts.value
-  const q = searchQuery.value.toLowerCase()
-  return contacts.value.filter(c =>
-    c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q),
-  )
+// ─── Sync from MongoDB → Firebase ───
+async function syncChats() {
+  if (isSyncing.value)
+    return
+
+  isSyncing.value = true
+  try {
+    const result = await $fetch<any>('/api/chats/sync', { method: 'POST' })
+    toast.success(result.message, {
+      description: `Created: ${result.stats.created} | Updated: ${result.stats.updated} | Duration: ${result.stats.duration}ms`,
+    })
+    // Reload from Firebase after sync
+    await fetchChats()
+  }
+  catch (err: any) {
+    const msg = err?.data?.message || err?.statusMessage || 'Sync failed'
+    toast.error('Chat sync failed', { description: msg })
+  }
+  finally {
+    isSyncing.value = false
+  }
+}
+
+// ─── Derived ───
+const activeChat = computed(() => chats.value.find(c => c._id === activeContactId.value))
+
+const chatMessages = computed(() => {
+  const chat = activeChat.value
+  if (!chat) return []
+  // Support messages as array field or sub-collection
+  return chat.messages || []
 })
 
-function selectContact(id: string) {
+const filteredChats = computed(() => {
+  if (!searchQuery.value)
+    return chats.value
+  const q = searchQuery.value.toLowerCase()
+  return chats.value.filter((c: any) => {
+    const name = getChatName(c).toLowerCase()
+    const lastMsg = getLastMessage(c).toLowerCase()
+    return name.includes(q) || lastMsg.includes(q)
+  })
+})
+
+function selectChat(id: string) {
   activeContactId.value = id
-  const contact = contacts.value.find(c => c.id === id)
-  if (contact)
-    contact.unread = 0
   nextTick(() => scrollToBottom())
 }
 
@@ -153,28 +90,110 @@ function scrollToBottom() {
 }
 
 function sendMessage() {
-  if (!newMessage.value.trim() || !activeContact.value)
+  if (!newMessage.value.trim() || !activeChat.value)
     return
 
-  const msg: Message = {
+  // Push locally for instant feedback
+  const msg = {
     id: `m${Date.now()}`,
     text: newMessage.value.trim(),
     sender: 'me',
-    time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    time: new Date().toISOString(),
     read: false,
   }
 
-  activeContact.value.messages.push(msg)
-  activeContact.value.lastMessage = msg.text
-  activeContact.value.lastTime = msg.time
+  if (!activeChat.value.messages)
+    activeChat.value.messages = []
+  activeChat.value.messages.push(msg)
   newMessage.value = ''
-
   nextTick(() => scrollToBottom())
 }
 
-onMounted(() => scrollToBottom())
+// ─── Helpers ───
+function getChatName(chat: any): string {
+  if (!chat) return ''
+  // Try common field patterns
+  return chat.name || chat.contactName || chat.title
+    || chat.participant?.name || chat.participants?.map((p: any) => p.name || p).join(', ')
+    || chat.user?.name || chat.userName
+    || 'Chat'
+}
 
-// Avatar colors based on initials
+function getChatAvatar(chat: any): string {
+  const name = getChatName(chat)
+  return name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
+function getChatRole(chat: any): string {
+  return chat.role || chat.department || chat.type || chat.category || ''
+}
+
+function getLastMessage(chat: any): string {
+  if (chat.lastMessage) return typeof chat.lastMessage === 'string' ? chat.lastMessage : chat.lastMessage.text || ''
+  const msgs = chat.messages || []
+  if (msgs.length > 0) {
+    const last = msgs[msgs.length - 1]
+    return last.text || last.message || last.content || ''
+  }
+  return 'No messages yet'
+}
+
+function getLastTime(chat: any): string {
+  const dateStr = chat.lastMessageAt || chat.updatedAt || chat.lastTime || chat.createdAt
+  if (!dateStr) return ''
+  return formatRelativeTime(dateStr)
+}
+
+function getUnreadCount(chat: any): number {
+  return chat.unread || chat.unreadCount || 0
+}
+
+function isOnline(chat: any): boolean {
+  return chat.online || chat.isOnline || false
+}
+
+function getMessageSender(msg: any): string {
+  if (msg.sender === 'me' || msg.from === 'me' || msg.direction === 'outgoing') return 'me'
+  return 'them'
+}
+
+function getMessageText(msg: any): string {
+  return msg.text || msg.message || msg.content || msg.body || ''
+}
+
+function getMessageTime(msg: any): string {
+  const t = msg.time || msg.timestamp || msg.createdAt || msg.sentAt
+  if (!t) return ''
+  try {
+    return new Date(t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  }
+  catch { return String(t) }
+}
+
+function getMessageId(msg: any, idx: number): string {
+  return msg.id || msg._id || `msg-${idx}`
+}
+
+function formatRelativeTime(dateStr: string): string {
+  if (!dateStr) return ''
+  try {
+    const d = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+    const diffHr = Math.floor(diffMs / 3600000)
+    const diffDay = Math.floor(diffMs / 86400000)
+
+    if (diffMin < 1) return 'now'
+    if (diffMin < 60) return `${diffMin}m`
+    if (diffHr < 24) return `${diffHr}h`
+    if (diffDay < 2) return 'Yesterday'
+    if (diffDay < 7) return `${diffDay}d ago`
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+  catch { return String(dateStr) }
+}
+
 function getAvatarColor(name: string): string {
   const colors = [
     'bg-blue-500',
@@ -191,10 +210,32 @@ function getAvatarColor(name: string): string {
     hash = name.charCodeAt(i) + ((hash << 5) - hash)
   return colors[Math.abs(hash) % colors.length] ?? 'bg-blue-500'
 }
+
+onMounted(() => fetchChats())
 </script>
 
 <template>
   <div class="flex h-full bg-background overflow-hidden">
+    <!-- Teleport refresh button into the main header -->
+    <ClientOnly>
+      <Teleport to="#header-actions">
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 gap-1.5"
+          :disabled="isSyncing"
+          @click="syncChats"
+        >
+          <Icon
+            name="i-lucide-refresh-cw"
+            class="size-3.5"
+            :class="{ 'animate-spin': isSyncing }"
+          />
+          {{ isSyncing ? 'Syncing...' : 'Refresh' }}
+        </Button>
+      </Teleport>
+    </ClientOnly>
+
     <!-- ─── Left Sidebar: Contact List ─── -->
     <div class="w-80 shrink-0 border-r flex flex-col bg-card">
       <!-- Sidebar Header -->
@@ -202,6 +243,9 @@ function getAvatarColor(name: string): string {
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-sm font-semibold">
             Messages
+            <Badge v-if="chats.length" variant="secondary" class="ml-1.5 text-[10px] tabular-nums">
+              {{ chats.length }}
+            </Badge>
           </h2>
           <div class="flex items-center gap-1">
             <Button variant="ghost" size="sm" class="h-7 w-7 p-0">
@@ -220,45 +264,72 @@ function getAvatarColor(name: string): string {
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex-1 flex items-center justify-center">
+        <div class="flex flex-col items-center gap-2">
+          <Icon name="i-lucide-loader-2" class="size-6 animate-spin text-primary/60" />
+          <p class="text-xs text-muted-foreground">
+            Loading chats...
+          </p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredChats.length === 0" class="flex-1 flex flex-col items-center justify-center px-4">
+        <div class="size-14 rounded-full bg-muted/40 flex items-center justify-center mb-3">
+          <Icon name="i-lucide-message-circle" class="size-7 text-muted-foreground/40" />
+        </div>
+        <p class="text-sm font-medium text-center">
+          {{ chats.length === 0 ? 'No chats yet' : 'No results' }}
+        </p>
+        <p class="text-xs text-muted-foreground text-center mt-1">
+          {{ chats.length === 0 ? 'Click Refresh to sync from database' : 'Try a different search' }}
+        </p>
+        <Button v-if="chats.length === 0" variant="outline" size="sm" class="mt-3 gap-1.5" @click="syncChats">
+          <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+          Sync Chats
+        </Button>
+      </div>
+
       <!-- Contact List -->
-      <div class="flex-1 overflow-y-auto">
+      <div v-else class="flex-1 overflow-y-auto">
         <button
-          v-for="contact in filteredContacts"
-          :key="contact.id"
+          v-for="chat in filteredChats"
+          :key="chat._id"
           class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 hover:bg-muted/40"
-          :class="{ 'bg-primary/5 border-l-2 border-l-primary': activeContactId === contact.id }"
-          @click="selectContact(contact.id)"
+          :class="{ 'bg-primary/5 border-l-2 border-l-primary': activeContactId === chat._id }"
+          @click="selectChat(chat._id)"
         >
           <!-- Avatar -->
           <div class="relative shrink-0">
             <div
               class="size-10 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              :class="getAvatarColor(contact.name)"
+              :class="getAvatarColor(getChatName(chat))"
             >
-              {{ contact.avatar }}
+              {{ getChatAvatar(chat) }}
             </div>
             <!-- Online indicator -->
             <span
-              v-if="contact.online"
-              class="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-emerald-500 border-2 border-card"
+              v-if="isOnline(chat)"
+              class="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-primary border-2 border-card"
             />
           </div>
 
           <!-- Info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="text-sm font-medium truncate">{{ contact.name }}</span>
-              <span class="text-[10px] text-muted-foreground shrink-0">{{ contact.lastTime }}</span>
+              <span class="text-sm font-medium truncate">{{ getChatName(chat) }}</span>
+              <span class="text-[10px] text-muted-foreground shrink-0">{{ getLastTime(chat) }}</span>
             </div>
             <div class="flex items-center justify-between mt-0.5">
               <p class="text-xs text-muted-foreground truncate pr-2">
-                {{ contact.lastMessage }}
+                {{ getLastMessage(chat) }}
               </p>
               <Badge
-                v-if="contact.unread > 0"
-                class="h-4 min-w-4 px-1 text-[9px] font-bold bg-emerald-500 text-white shrink-0"
+                v-if="getUnreadCount(chat) > 0"
+                class="h-4 min-w-4 px-1 text-[9px] font-bold bg-primary text-primary-foreground shrink-0"
               >
-                {{ contact.unread }}
+                {{ getUnreadCount(chat) }}
               </Badge>
             </div>
           </div>
@@ -268,29 +339,29 @@ function getAvatarColor(name: string): string {
 
     <!-- ─── Right: Chat Area ─── -->
     <div class="flex-1 flex flex-col min-w-0">
-      <template v-if="activeContact">
+      <template v-if="activeChat">
         <!-- Chat Header -->
         <div class="shrink-0 px-5 py-3 border-b bg-card flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="relative">
               <div
                 class="size-9 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                :class="getAvatarColor(activeContact.name)"
+                :class="getAvatarColor(getChatName(activeChat))"
               >
-                {{ activeContact.avatar }}
+                {{ getChatAvatar(activeChat) }}
               </div>
               <span
-                v-if="activeContact.online"
-                class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 border-2 border-card"
+                v-if="isOnline(activeChat)"
+                class="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-primary border-2 border-card"
               />
             </div>
             <div>
               <h3 class="text-sm font-semibold">
-                {{ activeContact.name }}
+                {{ getChatName(activeChat) }}
               </h3>
               <p class="text-[11px] text-muted-foreground">
-                <span v-if="activeContact.online" class="text-emerald-500 font-medium">online</span>
-                <span v-else>{{ activeContact.role }}</span>
+                <span v-if="isOnline(activeChat)" class="text-primary font-medium">online</span>
+                <span v-else>{{ getChatRole(activeChat) || 'offline' }}</span>
               </p>
             </div>
           </div>
@@ -316,46 +387,56 @@ function getAvatarColor(name: string): string {
           class="flex-1 overflow-y-auto px-6 py-4 space-y-1"
           style="background: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(0,0,0,0.008) 35px, rgba(0,0,0,0.008) 70px);"
         >
-          <!-- Date separator -->
-          <div class="flex items-center justify-center py-3">
-            <span class="px-3 py-1 bg-muted/60 rounded-lg text-[10px] text-muted-foreground font-medium shadow-sm">
-              Today
-            </span>
+          <!-- Empty messages -->
+          <div v-if="chatMessages.length === 0" class="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <Icon name="i-lucide-message-square-dashed" class="size-10 mb-3 opacity-30" />
+            <p class="text-sm">
+              No messages in this conversation
+            </p>
           </div>
 
-          <!-- Message Bubbles -->
-          <div
-            v-for="msg in activeContact.messages"
-            :key="msg.id"
-            class="flex animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
-            :class="msg.sender === 'me' ? 'justify-end' : 'justify-start'"
-          >
+          <template v-else>
+            <!-- Date separator -->
+            <div class="flex items-center justify-center py-3">
+              <span class="px-3 py-1 bg-muted/60 rounded-lg text-[10px] text-muted-foreground font-medium shadow-sm">
+                Messages
+              </span>
+            </div>
+
+            <!-- Message Bubbles -->
             <div
-              class="max-w-[70%] px-3 py-2 rounded-2xl shadow-sm relative group"
-              :class="[
-                msg.sender === 'me'
-                  ? 'bg-emerald-500 dark:bg-emerald-600 text-white rounded-br-sm'
-                  : 'bg-card dark:bg-muted border border-border/50 rounded-bl-sm',
-              ]"
+              v-for="(msg, idx) in chatMessages"
+              :key="getMessageId(msg, Number(idx))"
+              class="flex animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
+              :class="getMessageSender(msg) === 'me' ? 'justify-end' : 'justify-start'"
             >
-              <p class="text-[13px] leading-relaxed whitespace-pre-wrap break-words">
-                {{ msg.text }}
-              </p>
               <div
-                class="flex items-center justify-end gap-1 mt-0.5"
-                :class="msg.sender === 'me' ? 'text-white/70' : 'text-muted-foreground'"
+                class="max-w-[70%] px-3 py-2 rounded-2xl shadow-sm relative group"
+                :class="[
+                  getMessageSender(msg) === 'me'
+                    ? 'bg-primary text-primary-foreground rounded-br-sm'
+                    : 'bg-card dark:bg-muted border border-border/50 rounded-bl-sm',
+                ]"
               >
-                <span class="text-[9px]">{{ msg.time }}</span>
-                <!-- Read receipts for sent messages -->
-                <Icon
-                  v-if="msg.sender === 'me'"
-                  :name="msg.read ? 'i-lucide-check-check' : 'i-lucide-check'"
-                  class="size-3"
-                  :class="msg.read ? 'text-blue-200' : 'text-white/50'"
-                />
+                <p class="text-[13px] leading-relaxed whitespace-pre-wrap break-words">
+                  {{ getMessageText(msg) }}
+                </p>
+                <div
+                  class="flex items-center justify-end gap-1 mt-0.5"
+                  :class="getMessageSender(msg) === 'me' ? 'text-primary-foreground/70' : 'text-muted-foreground'"
+                >
+                  <span class="text-[9px]">{{ getMessageTime(msg) }}</span>
+                  <!-- Read receipts for sent messages -->
+                  <Icon
+                    v-if="getMessageSender(msg) === 'me'"
+                    :name="msg.read ? 'i-lucide-check-check' : 'i-lucide-check'"
+                    class="size-3"
+                    :class="msg.read ? 'text-primary-foreground' : 'text-primary-foreground/50'"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
 
         <!-- Message Input -->
@@ -379,13 +460,13 @@ function getAvatarColor(name: string): string {
               type="submit"
               size="sm"
               class="h-10 w-10 p-0 rounded-full shrink-0"
-              :class="newMessage.trim() ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-muted'"
+              :class="newMessage.trim() ? 'bg-primary hover:bg-primary/90' : 'bg-muted'"
               :disabled="!newMessage.trim()"
             >
               <Icon
                 :name="newMessage.trim() ? 'i-lucide-send' : 'i-lucide-mic'"
                 class="size-4"
-                :class="newMessage.trim() ? 'text-white' : 'text-muted-foreground'"
+                :class="newMessage.trim() ? 'text-primary-foreground' : 'text-muted-foreground'"
               />
             </Button>
           </form>
@@ -396,13 +477,19 @@ function getAvatarColor(name: string): string {
       <template v-else>
         <div class="flex-1 flex items-center justify-center bg-muted/10">
           <div class="text-center">
-            <div class="size-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-              <Icon name="i-lucide-message-circle" class="size-10 text-emerald-500" />
+            <div class="size-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Icon name="i-lucide-message-circle" class="size-10 text-primary" />
             </div>
             <h3 class="text-lg font-semibold">
               DEVCO Chat
             </h3>
-            <p class="text-sm text-muted-foreground mt-1">
+            <p v-if="isLoading" class="text-sm text-muted-foreground mt-1">
+              Loading conversations...
+            </p>
+            <p v-else-if="chats.length === 0" class="text-sm text-muted-foreground mt-1">
+              Click Refresh to sync conversations from the database
+            </p>
+            <p v-else class="text-sm text-muted-foreground mt-1">
               Select a conversation to start messaging
             </p>
           </div>

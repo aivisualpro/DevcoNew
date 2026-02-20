@@ -33,7 +33,7 @@ async function syncTasks() {
 </script>
 
 <template>
-  <div class="h-full">
+  <div class="h-full overflow-hidden">
     <!-- Teleport refresh button into the main header -->
     <ClientOnly>
       <Teleport to="#header-actions">
