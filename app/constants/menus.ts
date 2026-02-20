@@ -29,6 +29,11 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-scroll-text',
         link: '/estimates/all',
       },
+      {
+        title: 'Time Cards',
+        icon: 'i-lucide-timer',
+        link: '/time-cards',
+      },
     ],
   },
   {
