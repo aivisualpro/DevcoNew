@@ -45,6 +45,14 @@ export default defineNuxtConfig({
     plugins: [
       tailwindcss(),
     ],
+    optimizeDeps: {
+      include: [
+        'prosemirror-state',
+        'prosemirror-transform',
+        'prosemirror-model',
+        'prosemirror-view',
+      ],
+    },
     server: {
       watch: {
         usePolling: false,
