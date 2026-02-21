@@ -263,14 +263,17 @@ export function useTimeCardsApi() {
     // Update local cache
     const idx = _allTimeCards.value.findIndex(tc => tc.id === id || tc._id === id)
     if (idx >= 0) {
-      const tc = { ..._allTimeCards.value[idx], ...updates }
+      const tc: TimeCard = { ..._allTimeCards.value[idx], ...updates } as TimeCard
 
       // Recalculate hours for DRIVE TIME when dump/shop changes
       if (tc.type === 'DRIVE TIME') {
         let driveHours = 0
-        if (tc.distance > 0) driveHours += tc.distance / 55
-        if (tc.dumpQty > 0) driveHours += tc.dumpQty * 0.5
-        if (tc.shopQty > 0) driveHours += tc.shopQty * 0.25
+        const dist = Number(tc.distance) || 0
+        const dump = Number(tc.dumpQty) || 0
+        const shop = Number(tc.shopQty) || 0
+        if (dist > 0) driveHours += dist / 55
+        if (dump > 0) driveHours += dump * 0.5
+        if (shop > 0) driveHours += shop * 0.25
         if (driveHours > 0) tc.hours = Math.round(driveHours * 100) / 100
       }
 

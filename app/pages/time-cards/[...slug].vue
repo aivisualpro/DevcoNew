@@ -229,10 +229,11 @@ const tableTotalHours = computed(() =>
   filteredTableCards.value.reduce((sum, tc) => sum + (toNum(tc.hours)), 0),
 )
 
-// ─── Infinite scroll ───
+// ─── Infinite scroll via IntersectionObserver ───
 const PAGE_SIZE = 50
 const displayCount = ref(PAGE_SIZE)
-const tableScrollRef = ref<HTMLElement | null>(null)
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
 // Reset display count when filters change
 watch([year, mondayStr, employeeName, tableSearch], () => {
@@ -245,14 +246,33 @@ const visibleTableCards = computed(() => {
 
 const hasMore = computed(() => displayCount.value < filteredTableCards.value.length)
 
-function onTableScroll(e: Event) {
-  const el = e.target as HTMLElement
-  if (!el) return
-  const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200
-  if (nearBottom && hasMore.value) {
+function loadMore() {
+  if (hasMore.value) {
     displayCount.value += PAGE_SIZE
   }
 }
+
+// Watch the sentinel element and observe it
+onMounted(() => {
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0]?.isIntersecting && hasMore.value) {
+      loadMore()
+    }
+  }, { rootMargin: '200px' })
+})
+
+watch(loadMoreSentinel, (el) => {
+  // Disconnect previous observation
+  observer?.disconnect()
+  if (el && observer) {
+    observer.observe(el)
+  }
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  observer = null
+})
 
 // ─── Filtered data for DETAIL view ───
 const dayCards = computed(() => {
@@ -323,7 +343,7 @@ async function handleRefresh() {
       <!-- ═══════════════════ TABLE VIEW (1-3 segments) ═══════════════════ -->
       <template v-if="!isDetailView">
         <!-- Table -->
-        <div class="flex-1 min-h-0 overflow-auto" @scroll="onTableScroll">
+        <div class="flex-1 min-h-0 overflow-auto">
           <!-- Loading -->
           <div v-if="!isFetched" class="flex items-center justify-center h-64">
             <Icon name="i-lucide-loader-2" class="size-8 animate-spin text-muted-foreground" />
@@ -444,8 +464,8 @@ async function handleRefresh() {
             </TableBody>
           </Table>
 
-          <!-- Load more indicator -->
-          <div v-if="hasMore" class="flex items-center justify-center py-4 gap-2 text-muted-foreground">
+          <!-- Load more sentinel (observed by IntersectionObserver) -->
+          <div v-if="hasMore" ref="loadMoreSentinel" class="flex items-center justify-center py-4 gap-2 text-muted-foreground">
             <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
             <span class="text-xs">Showing {{ visibleTableCards.length }} of {{ filteredTableCards.length }}... scroll for more</span>
           </div>
