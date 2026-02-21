@@ -412,7 +412,7 @@ async function handleRefresh() {
                   Notify
                 </Badge>
               </div>
-              <Button variant="ghost" size="sm" class="h-7 text-xs font-bold gap-1 hover:text-primary">
+              <Button variant="ghost" size="sm" class="h-7 text-xs font-bold gap-1 hover:text-primary" @click.stop="navigateTo(`/scheduled-jobs/detail/${job.id}`)">
                 Details
                 <Icon name="i-lucide-arrow-up-right" class="size-3" />
               </Button>
