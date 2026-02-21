@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const timeCardsSearch = ref('')
+provide('timeCardsSearch', timeCardsSearch)
 </script>
 
 <template>

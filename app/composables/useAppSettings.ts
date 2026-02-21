@@ -28,6 +28,7 @@ export function useAppSettings() {
 
   const cookieAppSettings = useCookie<AppSettings>('app_settings', {
     default: () => processedConfig,
+    maxAge: 60 * 60 * 24 * 365, // 1 year
   })
 
   const updateAppSettings = (settings: AppSettings) => {

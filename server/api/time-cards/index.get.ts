@@ -25,6 +25,8 @@ export default defineEventHandler(async () => {
         'hours',
         'scheduleDate',
         'createdAt',
+        'locationIn',
+        'locationOut',
       )
       .get()
 

@@ -10,6 +10,9 @@ const route = useRoute()
 const { allTimeCards, isFetched, fetchAllTimeCards } = useTimeCardsApi()
 fetchAllTimeCards()
 
+// Inject shared search from layout
+const searchQuery = inject<Ref<string>>('timeCardsSearch', ref(''))
+
 // ─── Helpers (timezone-agnostic) ───
 
 /** Extract date portion from various formats — no timezone conversion */
@@ -90,6 +93,7 @@ function fullDate(str: string): string {
 }
 
 // ─── Build tree: Year → Week → Employee → Days ───
+// Filtered by search query so sidebar totals match the table
 
 interface DayEntry {
   dateStr: string
@@ -118,13 +122,24 @@ interface YearNode {
   weeks: WeekNode[]
 }
 
+// Filter time cards by search query (same logic as table page)
+const filteredTimeCards = computed(() => {
+  if (!searchQuery.value) return allTimeCards.value
+  const q = searchQuery.value.toLowerCase()
+  return allTimeCards.value.filter(tc =>
+    (tc.employeeName || '').toLowerCase().includes(q)
+    || (tc.type || '').toLowerCase().includes(q)
+    || (tc.comments || '').toLowerCase().includes(q),
+  )
+})
+
 const tree = computed<YearNode[]>(() => {
   if (!isFetched.value) return []
 
   // Group: year → monday → employeeName → dateStr → cards
   const yearMap = new Map<number, Map<string, Map<string, Map<string, any[]>>>>()
 
-  for (const tc of allTimeCards.value) {
+  for (const tc of filteredTimeCards.value) {
     const dateStr = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
     if (!dateStr) continue
 

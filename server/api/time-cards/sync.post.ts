@@ -14,6 +14,12 @@ function sanitizeForFirestore(value: any): any {
     return value.toISOString()
   if (Buffer.isBuffer(value))
     return value.toString('base64')
+  // MongoDB numeric types (Double, Int32, Long) — extract the raw number
+  if (typeof value === 'object' && value !== null && typeof value.valueOf === 'function') {
+    const raw = value.valueOf()
+    if (typeof raw === 'number' || typeof raw === 'bigint')
+      return Number(raw)
+  }
   if (Array.isArray(value))
     return value.map(sanitizeForFirestore)
   if (typeof value === 'object' && value !== null) {
@@ -28,6 +34,54 @@ function sanitizeForFirestore(value: any): any {
     return result
   }
   return value
+}
+
+/**
+ * Extract a clean { lat, lng } from various MongoDB location formats.
+ * Handles: { latitude, longitude }, { lat, lng }, GeoJSON { type, coordinates },
+ * plain arrays [lat, lng], and nested $numberDouble wrappers.
+ */
+function extractLocation(loc: any): { lat: number, lng: number } | null {
+  if (!loc) return null
+
+  // String format: "33.498991, -117.157243"
+  if (typeof loc === 'string') {
+    const parts = loc.split(',').map((s: string) => s.trim())
+    if (parts.length >= 2) {
+      const lat = Number(parts[0])
+      const lng = Number(parts[1])
+      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+    }
+    return null
+  }
+
+  // GeoJSON: { type: 'Point', coordinates: [lng, lat] }
+  if (loc.type === 'Point' && Array.isArray(loc.coordinates)) {
+    const lng = Number(loc.coordinates[0]?.$numberDouble ?? loc.coordinates[0])
+    const lat = Number(loc.coordinates[1]?.$numberDouble ?? loc.coordinates[1])
+    if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+    return null
+  }
+
+  // Plain object with lat/lng or latitude/longitude
+  const rawLat = loc.lat ?? loc.latitude
+  const rawLng = loc.lng ?? loc.longitude
+  if (rawLat !== undefined && rawLng !== undefined) {
+    const lat = Number(rawLat?.$numberDouble ?? rawLat?.valueOf?.() ?? rawLat)
+    const lng = Number(rawLng?.$numberDouble ?? rawLng?.valueOf?.() ?? rawLng)
+    if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+    return null
+  }
+
+  // Array: [lat, lng]
+  if (Array.isArray(loc) && loc.length >= 2) {
+    const lat = Number(loc[0]?.$numberDouble ?? loc[0])
+    const lng = Number(loc[1]?.$numberDouble ?? loc[1])
+    if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+    return null
+  }
+
+  return null
 }
 
 /**
@@ -156,8 +210,8 @@ export default defineEventHandler(async () => {
           lunchStart: entry.lunchStart ? sanitizeForFirestore(entry.lunchStart) : null,
           lunchEnd: entry.lunchEnd ? sanitizeForFirestore(entry.lunchEnd) : null,
           clockOut: entry.clockOut ? sanitizeForFirestore(entry.clockOut) : null,
-          locationIn: entry.locationIn ? sanitizeForFirestore(entry.locationIn) : null,
-          locationOut: entry.locationOut ? sanitizeForFirestore(entry.locationOut) : null,
+          locationIn: extractLocation(entry.locationIn),
+          locationOut: extractLocation(entry.locationOut),
           hourlyRateSITE: entry.hourlyRateSITE ?? null,
           hourlyRateDrive: entry.hourlyRateDrive ?? null,
           dumpWashout: entry.dumpWashout ?? null,

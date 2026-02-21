@@ -92,6 +92,15 @@ function formatTime(dateStr: string | null): string {
   if (usMatch) {
     return usMatch[1]!.replace(/:00\s+(AM|PM)/, ' $1')
   }
+  // Bare 24-hour time: "12:00:00", "07:30:00", "14:00:00"
+  const bareMatch = dateStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  if (bareMatch) {
+    const hour = Number.parseInt(bareMatch[1]!, 10)
+    const min = bareMatch[2]!
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+    return `${h12}:${min} ${ampm}`
+  }
   return dateStr
 }
 
@@ -124,6 +133,14 @@ function fmtNum(n: number, decimals = 2) {
 
 function fmtMoney(n: number) {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function formatLocation(loc: any): string {
+  if (!loc) return '—'
+  const lat = Number(loc.lat ?? loc.latitude ?? loc[0])
+  const lng = Number(loc.lng ?? loc.longitude ?? loc[1])
+  if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return '—'
+  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
 }
 
 function getInitials(name: string): string {
@@ -169,8 +186,8 @@ const tableCards = computed(() => {
   })
 })
 
-// Search for table
-const tableSearch = ref('')
+// Search for table — shared with sidebar nav via provide/inject
+const tableSearch = inject<Ref<string>>('timeCardsSearch', ref(''))
 const filteredTableCards = computed(() => {
   if (!tableSearch.value) return tableCards.value
   const q = tableSearch.value.toLowerCase()
@@ -294,7 +311,8 @@ async function handleRefresh() {
                 <TableHead class="text-[11px]">Type</TableHead>
                 <TableHead class="text-[11px]">Clock In</TableHead>
                 <TableHead class="text-[11px]">Clock Out</TableHead>
-                <TableHead class="text-[11px]">Lunch</TableHead>
+                <TableHead class="text-[11px]">Location In</TableHead>
+                <TableHead class="text-[11px]">Location Out</TableHead>
                 <TableHead class="text-[11px] text-right">Hours</TableHead>
                 <TableHead class="text-[11px] text-right">Site Rate</TableHead>
                 <TableHead class="text-[11px] text-right">Drive Rate</TableHead>
@@ -328,22 +346,33 @@ async function handleRefresh() {
                   </Badge>
                   <span v-else class="text-xs text-muted-foreground">—</span>
                 </TableCell>
-                <TableCell class="text-xs tabular-nums">{{ formatTime(tc.clockIn) }}</TableCell>
-                <TableCell class="text-xs tabular-nums">{{ formatTime(tc.clockOut) }}</TableCell>
-                <TableCell class="text-xs tabular-nums text-muted-foreground">
-                  {{ formatTime(tc.lunchStart) }} – {{ formatTime(tc.lunchEnd) }}
+                <!-- DRIVE TIME: hide clock in/out, show — -->
+                <TableCell class="text-xs tabular-nums">{{ tc.type === 'DRIVE TIME' ? '—' : formatTime(tc.clockIn) }}</TableCell>
+                <TableCell class="text-xs tabular-nums">{{ tc.type === 'DRIVE TIME' ? '—' : formatTime(tc.clockOut) }}</TableCell>
+                <!-- SITE TIME: hide locations, show — -->
+                <TableCell class="text-xs tabular-nums text-muted-foreground truncate max-w-[140px]">
+                  {{ tc.type === 'SITE TIME' ? '—' : formatLocation(tc.locationIn) }}
+                </TableCell>
+                <TableCell class="text-xs tabular-nums text-muted-foreground truncate max-w-[140px]">
+                  {{ tc.type === 'SITE TIME' ? '—' : formatLocation(tc.locationOut) }}
                 </TableCell>
                 <TableCell class="text-right text-xs font-semibold tabular-nums text-primary">
                   {{ fmtNum(toNum(tc.hours)) }}
                 </TableCell>
+                <!-- DRIVE TIME: hide site rate -->
                 <TableCell class="text-right text-xs tabular-nums">
-                  {{ fmtMoney(toNum(tc.hourlyRateSITE)) }}
+                  {{ tc.type === 'DRIVE TIME' ? '—' : fmtMoney(toNum(tc.hourlyRateSITE)) }}
                 </TableCell>
+                <!-- SITE TIME: hide drive rate -->
                 <TableCell class="text-right text-xs tabular-nums">
-                  {{ fmtMoney(toNum(tc.hourlyRateDrive)) }}
+                  {{ tc.type === 'SITE TIME' ? '—' : fmtMoney(toNum(tc.hourlyRateDrive)) }}
                 </TableCell>
-                <TableCell class="text-right text-xs tabular-nums text-muted-foreground">
-                  {{ fmtNum(toNum(tc.distance), 1) }}
+                <!-- SITE TIME: hide distance -->
+                <TableCell
+                  class="text-right text-xs tabular-nums"
+                  :class="tc.type === 'SITE TIME' ? '' : tc._distanceCalculated ? 'text-primary font-semibold' : 'text-muted-foreground'"
+                >
+                  {{ tc.type === 'SITE TIME' ? '—' : fmtNum(toNum(tc.distance), 1) }}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -476,20 +505,40 @@ async function handleRefresh() {
                       </p>
                       <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.clockIn) }}</p>
                     </div>
-                    <div>
-                      <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                        <Icon name="i-lucide-utensils" class="size-3 text-amber-500" />
-                        Lunch Start
-                      </p>
-                      <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.lunchStart) }}</p>
-                    </div>
-                    <div>
-                      <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                        <Icon name="i-lucide-utensils-crossed" class="size-3 text-amber-500" />
-                        Lunch End
-                      </p>
-                      <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.lunchEnd) }}</p>
-                    </div>
+                    <!-- DRIVE TIME: show locations instead of lunch -->
+                    <template v-if="tc.type === 'DRIVE TIME'">
+                      <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                          <Icon name="i-lucide-map-pin" class="size-3 text-blue-500" />
+                          Location In
+                        </p>
+                        <p class="text-xs font-semibold mt-0.5 tabular-nums">{{ formatLocation(tc.locationIn) }}</p>
+                      </div>
+                      <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                          <Icon name="i-lucide-map-pin-check-inside" class="size-3 text-blue-500" />
+                          Location Out
+                        </p>
+                        <p class="text-xs font-semibold mt-0.5 tabular-nums">{{ formatLocation(tc.locationOut) }}</p>
+                      </div>
+                    </template>
+                    <!-- SITE TIME / other: show lunch -->
+                    <template v-else>
+                      <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                          <Icon name="i-lucide-utensils" class="size-3 text-amber-500" />
+                          Lunch Start
+                        </p>
+                        <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.lunchStart) }}</p>
+                      </div>
+                      <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                          <Icon name="i-lucide-utensils-crossed" class="size-3 text-amber-500" />
+                          Lunch End
+                        </p>
+                        <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.lunchEnd) }}</p>
+                      </div>
+                    </template>
                     <div>
                       <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                         <Icon name="i-lucide-log-out" class="size-3 text-rose-500" />
@@ -499,20 +548,22 @@ async function handleRefresh() {
                     </div>
                   </div>
 
-                  <div class="mt-3 grid grid-cols-3 gap-3">
-                    <div class="rounded-lg bg-emerald-500/5 p-2.5 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30">
+                  <div class="mt-3 grid gap-3" :class="tc.type === 'DRIVE TIME' ? 'grid-cols-2' : 'grid-cols-1'">
+                    <!-- SITE TIME: show Site Rate only -->
+                    <div v-if="tc.type !== 'DRIVE TIME'" class="rounded-lg bg-emerald-500/5 p-2.5 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30">
                       <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Site Rate</p>
                       <p class="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                         {{ fmtMoney(toNum(tc.hourlyRateSITE)) }}<span class="text-[10px] font-normal">/hr</span>
                       </p>
                     </div>
-                    <div class="rounded-lg bg-blue-500/5 p-2.5 ring-1 ring-blue-200/30 dark:ring-blue-800/30">
+                    <!-- DRIVE TIME: show Drive Rate + Distance -->
+                    <div v-if="tc.type !== 'SITE TIME'" class="rounded-lg bg-blue-500/5 p-2.5 ring-1 ring-blue-200/30 dark:ring-blue-800/30">
                       <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Drive Rate</p>
                       <p class="text-sm font-bold tabular-nums text-blue-600 dark:text-blue-400">
                         {{ fmtMoney(toNum(tc.hourlyRateDrive)) }}<span class="text-[10px] font-normal">/hr</span>
                       </p>
                     </div>
-                    <div class="rounded-lg bg-amber-500/5 p-2.5 ring-1 ring-amber-200/30 dark:ring-amber-800/30">
+                    <div v-if="tc.type !== 'SITE TIME'" class="rounded-lg bg-amber-500/5 p-2.5 ring-1 ring-amber-200/30 dark:ring-amber-800/30">
                       <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Distance</p>
                       <p class="text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400">
                         {{ fmtNum(toNum(tc.distance), 1) }} <span class="text-[10px] font-normal">mi</span>
