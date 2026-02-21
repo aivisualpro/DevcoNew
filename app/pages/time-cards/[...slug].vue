@@ -4,8 +4,34 @@ import { toast } from 'vue-sonner'
 const route = useRoute()
 const { setHeader } = usePageHeader()
 
-const { allTimeCards, isFetched, fetchAllTimeCards, isSyncing, syncTimeCards, syncResult } = useTimeCardsApi()
+const { allTimeCards, isFetched, fetchAllTimeCards, isSyncing, syncTimeCards, syncResult, updateTimeCard } = useTimeCardsApi()
 fetchAllTimeCards()
+
+// Inline editing for dump/shop qty
+const editingCell = ref<{ id: string, field: 'dumpQty' | 'shopQty' } | null>(null)
+const editingValue = ref(0)
+
+function startEdit(tcId: string, field: 'dumpQty' | 'shopQty', currentVal: number) {
+  editingCell.value = { id: tcId, field }
+  editingValue.value = currentVal || 0
+}
+
+async function saveEdit() {
+  if (!editingCell.value) return
+  const { id, field } = editingCell.value
+  try {
+    await updateTimeCard(id, { [field]: editingValue.value })
+    toast.success(`${field === 'dumpQty' ? 'Dump' : 'Shop'} qty updated`)
+  }
+  catch (err: any) {
+    toast.error(err?.message || 'Failed to update')
+  }
+  editingCell.value = null
+}
+
+function cancelEdit() {
+  editingCell.value = null
+}
 
 // Parse route: /time-cards/:year/:mondayStr/:employeeName/:dateStr
 const slugParts = computed(() => {
@@ -309,13 +335,9 @@ async function handleRefresh() {
                 <TableHead class="text-[11px]">Employee</TableHead>
                 <TableHead class="text-[11px]">Date</TableHead>
                 <TableHead class="text-[11px]">Type</TableHead>
-                <TableHead class="text-[11px]">Clock In</TableHead>
-                <TableHead class="text-[11px]">Clock Out</TableHead>
-                <TableHead class="text-[11px]">Location In</TableHead>
-                <TableHead class="text-[11px]">Location Out</TableHead>
+                <TableHead class="text-[11px]">In / Dump</TableHead>
+                <TableHead class="text-[11px]">Out / Shop</TableHead>
                 <TableHead class="text-[11px] text-right">Hours</TableHead>
-                <TableHead class="text-[11px] text-right">Site Rate</TableHead>
-                <TableHead class="text-[11px] text-right">Drive Rate</TableHead>
                 <TableHead class="text-[11px] text-right">Distance</TableHead>
               </TableRow>
             </TableHeader>
@@ -346,26 +368,70 @@ async function handleRefresh() {
                   </Badge>
                   <span v-else class="text-xs text-muted-foreground">—</span>
                 </TableCell>
-                <!-- DRIVE TIME: hide clock in/out, show — -->
-                <TableCell class="text-xs tabular-nums">{{ tc.type === 'DRIVE TIME' ? '—' : formatTime(tc.clockIn) }}</TableCell>
-                <TableCell class="text-xs tabular-nums">{{ tc.type === 'DRIVE TIME' ? '—' : formatTime(tc.clockOut) }}</TableCell>
-                <!-- SITE TIME: hide locations, show — -->
-                <TableCell class="text-xs tabular-nums text-muted-foreground truncate max-w-[140px]">
-                  {{ tc.type === 'SITE TIME' ? '—' : formatLocation(tc.locationIn) }}
+                <!-- DRIVE TIME: show Dump Qty; SITE TIME: show Clock In -->
+                <TableCell class="text-xs tabular-nums">
+                  <template v-if="tc.type === 'DRIVE TIME'">
+                    <!-- Inline-editable Dump Qty -->
+                    <div v-if="editingCell?.id === tc.id && editingCell?.field === 'dumpQty'" class="flex items-center gap-1" @click.stop>
+                      <input
+                        v-model.number="editingValue"
+                        type="number"
+                        min="0"
+                        class="w-12 h-6 text-xs text-center rounded border border-primary bg-background focus:outline-none focus:ring-1 focus:ring-primary tabular-nums"
+                        @keyup.enter="saveEdit()"
+                        @keyup.escape="cancelEdit()"
+                      >
+                      <button class="text-primary hover:text-primary/80" @click.stop="saveEdit()">
+                        <Icon name="i-lucide-check" class="size-3.5" />
+                      </button>
+                      <button class="text-muted-foreground hover:text-foreground" @click.stop="cancelEdit()">
+                        <Icon name="i-lucide-x" class="size-3.5" />
+                      </button>
+                    </div>
+                    <button
+                      v-else
+                      class="flex items-center gap-1 text-xs font-medium hover:text-primary transition-colors"
+                      @click.stop="startEdit(tc.id, 'dumpQty', tc.dumpQty)"
+                    >
+                      <Icon name="i-lucide-droplets" class="size-3 text-amber-500" />
+                      <span class="tabular-nums">{{ tc.dumpQty || 0 }}</span>
+                    </button>
+                  </template>
+                  <template v-else>{{ formatTime(tc.clockIn) }}</template>
                 </TableCell>
-                <TableCell class="text-xs tabular-nums text-muted-foreground truncate max-w-[140px]">
-                  {{ tc.type === 'SITE TIME' ? '—' : formatLocation(tc.locationOut) }}
+                <!-- DRIVE TIME: show Shop Qty; SITE TIME: show Clock Out -->
+                <TableCell class="text-xs tabular-nums">
+                  <template v-if="tc.type === 'DRIVE TIME'">
+                    <!-- Inline-editable Shop Qty -->
+                    <div v-if="editingCell?.id === tc.id && editingCell?.field === 'shopQty'" class="flex items-center gap-1" @click.stop>
+                      <input
+                        v-model.number="editingValue"
+                        type="number"
+                        min="0"
+                        class="w-12 h-6 text-xs text-center rounded border border-primary bg-background focus:outline-none focus:ring-1 focus:ring-primary tabular-nums"
+                        @keyup.enter="saveEdit()"
+                        @keyup.escape="cancelEdit()"
+                      >
+                      <button class="text-primary hover:text-primary/80" @click.stop="saveEdit()">
+                        <Icon name="i-lucide-check" class="size-3.5" />
+                      </button>
+                      <button class="text-muted-foreground hover:text-foreground" @click.stop="cancelEdit()">
+                        <Icon name="i-lucide-x" class="size-3.5" />
+                      </button>
+                    </div>
+                    <button
+                      v-else
+                      class="flex items-center gap-1 text-xs font-medium hover:text-primary transition-colors"
+                      @click.stop="startEdit(tc.id, 'shopQty', tc.shopQty)"
+                    >
+                      <Icon name="i-lucide-wrench" class="size-3 text-blue-500" />
+                      <span class="tabular-nums">{{ tc.shopQty || 0 }}</span>
+                    </button>
+                  </template>
+                  <template v-else>{{ formatTime(tc.clockOut) }}</template>
                 </TableCell>
                 <TableCell class="text-right text-xs font-semibold tabular-nums text-primary">
                   {{ fmtNum(toNum(tc.hours)) }}
-                </TableCell>
-                <!-- DRIVE TIME: hide site rate -->
-                <TableCell class="text-right text-xs tabular-nums">
-                  {{ tc.type === 'DRIVE TIME' ? '—' : fmtMoney(toNum(tc.hourlyRateSITE)) }}
-                </TableCell>
-                <!-- SITE TIME: hide drive rate -->
-                <TableCell class="text-right text-xs tabular-nums">
-                  {{ tc.type === 'SITE TIME' ? '—' : fmtMoney(toNum(tc.hourlyRateDrive)) }}
                 </TableCell>
                 <!-- SITE TIME: hide distance -->
                 <TableCell

@@ -27,6 +27,9 @@ export default defineEventHandler(async () => {
         'createdAt',
         'locationIn',
         'locationOut',
+        'dumpQty',
+        'shopQty',
+        'dumpWashout',
       )
       .get()
 

@@ -210,9 +210,13 @@ export function useTimeCardsApi() {
           }
         }
 
-        // If type is DRIVE TIME and hours is empty, calculate from distance
-        if (tc.type === 'DRIVE TIME' && (!tc.hours || tc.hours === 0) && tc.distance > 0) {
-          tc.hours = Math.round((tc.distance / 55) * 100) / 100
+        // If type is DRIVE TIME and hours is empty, calculate from distance + dump/shop
+        if (tc.type === 'DRIVE TIME' && (!tc.hours || tc.hours === 0)) {
+          let driveHours = 0
+          if (tc.distance > 0) driveHours += tc.distance / 55
+          if (tc.dumpQty > 0) driveHours += tc.dumpQty * 0.5
+          if (tc.shopQty > 0) driveHours += tc.shopQty * 0.25
+          if (driveHours > 0) tc.hours = Math.round(driveHours * 100) / 100
         }
 
         return tc
@@ -247,6 +251,34 @@ export function useTimeCardsApi() {
     await fetchAllTimeCards(true)
   }
 
+  /**
+   * Update specific fields on a time card in Firestore and local cache.
+   */
+  async function updateTimeCard(id: string, updates: Record<string, any>) {
+    await $fetch(`/api/time-cards/${id}`, {
+      method: 'PATCH',
+      body: updates,
+    })
+
+    // Update local cache
+    const idx = _allTimeCards.value.findIndex(tc => tc.id === id || tc._id === id)
+    if (idx >= 0) {
+      const tc = { ..._allTimeCards.value[idx], ...updates }
+
+      // Recalculate hours for DRIVE TIME when dump/shop changes
+      if (tc.type === 'DRIVE TIME') {
+        let driveHours = 0
+        if (tc.distance > 0) driveHours += tc.distance / 55
+        if (tc.dumpQty > 0) driveHours += tc.dumpQty * 0.5
+        if (tc.shopQty > 0) driveHours += tc.shopQty * 0.25
+        if (driveHours > 0) tc.hours = Math.round(driveHours * 100) / 100
+      }
+
+      _allTimeCards.value[idx] = tc
+      _allTimeCards.value = [..._allTimeCards.value] // trigger reactivity
+    }
+  }
+
   return {
     allTimeCards: _allTimeCards,
     isLoading: _isFetching,
@@ -256,5 +288,6 @@ export function useTimeCardsApi() {
     syncResult: _syncResult,
     fetchAllTimeCards,
     syncTimeCards,
+    updateTimeCard,
   }
 }

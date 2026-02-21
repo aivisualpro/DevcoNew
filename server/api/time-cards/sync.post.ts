@@ -215,6 +215,8 @@ export default defineEventHandler(async () => {
           hourlyRateSITE: entry.hourlyRateSITE ?? null,
           hourlyRateDrive: entry.hourlyRateDrive ?? null,
           dumpWashout: entry.dumpWashout ?? null,
+          dumpQty: entry.dumpQty ?? null,
+          shopQty: entry.shopQty ?? null,
           comments: entry.comments || '',
           createdBy: entry.createdBy ? sanitizeForFirestore(entry.createdBy) : null,
           createdAt: entry.createdAt ? sanitizeForFirestore(entry.createdAt) : null,
