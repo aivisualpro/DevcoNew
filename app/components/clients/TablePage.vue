@@ -121,7 +121,8 @@ function loadMore() {
 // Scroll handler for infinite loading
 function handleScroll(e: Event) {
   const target = e.target as HTMLElement
-  if (!target) return
+  if (!target)
+    return
   const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 200
   if (nearBottom && hasMore.value) {
     loadMore()

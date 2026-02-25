@@ -11,7 +11,7 @@ export default defineEventHandler(async () => {
       .orderBy('updatedAt', 'desc')
       .get()
 
-    const blocks = snapshot.docs.map((doc) => ({
+    const blocks = snapshot.docs.map(doc => ({
       ...doc.data(),
       _id: doc.id,
       id: doc.id,

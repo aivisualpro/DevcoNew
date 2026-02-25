@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 export interface ProposalBlock {
@@ -83,7 +83,8 @@ export function useProposalEditor(estimateId: Ref<string>) {
     proposalContent.value = content
     hasUnsavedChanges.value = true
 
-    if (autoSaveTimer) clearTimeout(autoSaveTimer)
+    if (autoSaveTimer)
+      clearTimeout(autoSaveTimer)
     autoSaveTimer = setTimeout(() => {
       saveProposal(content)
     }, 3000) // Auto-save after 3 seconds of inactivity
@@ -148,7 +149,7 @@ export function useProposalEditor(estimateId: Ref<string>) {
       toast.success('Block deleted')
       savedBlocks.value = savedBlocks.value.filter(b => b._id !== blockId)
     }
-    catch (err: any) {
+    catch (_err: any) {
       toast.error('Failed to delete block')
     }
   }
@@ -162,7 +163,8 @@ export function useProposalEditor(estimateId: Ref<string>) {
   }
 
   onUnmounted(() => {
-    if (autoSaveTimer) clearTimeout(autoSaveTimer)
+    if (autoSaveTimer)
+      clearTimeout(autoSaveTimer)
   })
 
   return {

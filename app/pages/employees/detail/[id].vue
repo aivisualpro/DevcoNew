@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { toast } from 'vue-sonner'
+
 const route = useRoute()
 const router = useRouter()
 const userId = computed(() => route.params.id as string)
@@ -27,7 +29,8 @@ const roleToCategorySlug: Record<string, string> = {
 
 const categorySlug = computed(() => {
   const role = user.value?.appRole
-  if (!role) return 'super-admin'
+  if (!role)
+    return 'super-admin'
   return roleToCategorySlug[role] || 'employees'
 })
 
@@ -79,13 +82,15 @@ const isSaving = ref(false)
 const editForm = ref<Record<string, any>>({})
 
 function openEditDialog() {
-  if (!user.value) return
+  if (!user.value)
+    return
   editForm.value = { ...user.value }
   showEditDialog.value = true
 }
 
 async function handleSave() {
-  if (!user.value) return
+  if (!user.value)
+    return
   isSaving.value = true
   try {
     await updateUser(user.value.id || user.value._id, editForm.value)
@@ -105,7 +110,8 @@ const showDeleteDialog = ref(false)
 const isDeleting = ref(false)
 
 async function handleDelete() {
-  if (!user.value) return
+  if (!user.value)
+    return
   isDeleting.value = true
   try {
     await deleteUser(user.value.id || user.value._id)
@@ -120,8 +126,6 @@ async function handleDelete() {
   }
 }
 
-import { toast } from 'vue-sonner'
-
 // Formatters
 function formatDate(date: string) {
   if (!date)
@@ -133,7 +137,8 @@ function formatDate(date: string) {
 }
 
 function formatCurrency(value: any) {
-  if (!value && value !== 0) return '—'
+  if (!value && value !== 0)
+    return '—'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(value))
 }
 
@@ -155,9 +160,12 @@ const getBadgeClass = (status: string) => badgeClasses[status] || 'bg-gray-500/1
 
 // ─── Check if a doc field has a value ───
 function hasDoc(value: any): boolean {
-  if (!value) return false
-  if (typeof value === 'string') return value.trim().length > 0 && value !== '—'
-  if (typeof value === 'boolean') return value
+  if (!value)
+    return false
+  if (typeof value === 'string')
+    return value.trim().length > 0 && value !== '—'
+  if (typeof value === 'boolean')
+    return value
   return true
 }
 
@@ -172,14 +180,14 @@ const complianceDocs = computed(() => [
   { key: 'dmvPullNotifications', label: 'DMV Pull Notifications', icon: 'i-lucide-bell' },
   { key: 'drivingRecordPermission', label: 'Driving Record Permission', icon: 'i-lucide-car' },
   { key: 'backgroundCheck', label: 'Background Check', icon: 'i-lucide-search-check' },
-  { key: 'copyOfDL', label: "Copy of Driver's License", icon: 'i-lucide-credit-card' },
+  { key: 'copyOfDL', label: 'Copy of Driver\'s License', icon: 'i-lucide-credit-card' },
   { key: 'copyOfSS', label: 'Copy of Social Security', icon: 'i-lucide-lock' },
   { key: 'lcpTracker', label: 'LCP Tracker', icon: 'i-lucide-activity' },
   { key: 'edd', label: 'EDD', icon: 'i-lucide-landmark' },
   { key: 'autoInsurance', label: 'Auto Insurance', icon: 'i-lucide-shield-check' },
   { key: 'veriforce', label: 'Veriforce', icon: 'i-lucide-badge-check' },
   { key: 'unionPaperwork1184', label: 'Union Paperwork (1184)', icon: 'i-lucide-clipboard-list' },
-  { key: 'driverLicense', label: "Driver's License", icon: 'i-lucide-id-card' },
+  { key: 'driverLicense', label: 'Driver\'s License', icon: 'i-lucide-id-card' },
 ])
 </script>
 
@@ -353,7 +361,6 @@ const complianceDocs = computed(() => [
 
         <!-- ═══ RIGHT COLUMN ═══ -->
         <div class="space-y-4 lg:col-span-2">
-
           <!-- Documents & Compliance -->
           <Card>
             <CardHeader class="pb-3">
@@ -458,9 +465,15 @@ const complianceDocs = computed(() => [
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Super Admin">Super Admin</SelectItem>
-                <SelectItem value="Admin">Admin</SelectItem>
-                <SelectItem value="Employee">Employee</SelectItem>
+                <SelectItem value="Super Admin">
+                  Super Admin
+                </SelectItem>
+                <SelectItem value="Admin">
+                  Admin
+                </SelectItem>
+                <SelectItem value="Employee">
+                  Employee
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -525,8 +538,12 @@ const complianceDocs = computed(() => [
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Active">
+                  Active
+                </SelectItem>
+                <SelectItem value="Inactive">
+                  Inactive
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -22,7 +22,8 @@ export default defineEventHandler(async (event) => {
     return { success: true, message: 'Employee deleted' }
   }
   catch (error: any) {
-    if (error.statusCode) throw error
+    if (error.statusCode)
+      throw error
     console.error('[Employee Delete Error]', error)
     throw createError({ statusCode: 500, statusMessage: 'Failed to delete employee' })
   }

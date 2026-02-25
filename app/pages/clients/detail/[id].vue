@@ -54,7 +54,8 @@ watchEffect(() => {
 
 // ─── Helpers ───
 function formatDate(value: any): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   }
@@ -62,7 +63,8 @@ function formatDate(value: any): string {
 }
 
 function getInitials(name: string | undefined): string {
-  if (!name) return '?'
+  if (!name)
+    return '?'
   return name
     .split(/\s+/)
     .slice(0, 2)
@@ -252,8 +254,12 @@ const documents = computed(() => client.value?.documents || [])
                       </AvatarFallback>
                     </Avatar>
                     <div class="min-w-0">
-                      <p class="text-xs font-semibold truncate">{{ contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || '—' }}</p>
-                      <p v-if="contact.role || contact.title" class="text-[10px] text-muted-foreground">{{ contact.role || contact.title }}</p>
+                      <p class="text-xs font-semibold truncate">
+                        {{ contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || '—' }}
+                      </p>
+                      <p v-if="contact.role || contact.title" class="text-[10px] text-muted-foreground">
+                        {{ contact.role || contact.title }}
+                      </p>
                     </div>
                   </div>
                   <div v-if="contact.email" class="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -268,7 +274,9 @@ const documents = computed(() => client.value?.documents || [])
               </div>
               <div v-else class="flex flex-col items-center gap-2 py-8 text-muted-foreground">
                 <Icon name="i-lucide-user-x" class="size-8" />
-                <p class="text-xs">No contacts on file</p>
+                <p class="text-xs">
+                  No contacts on file
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -306,7 +314,9 @@ const documents = computed(() => client.value?.documents || [])
               </div>
               <div v-else class="flex flex-col items-center gap-2 py-8 text-muted-foreground">
                 <Icon name="i-lucide-folder-x" class="size-8" />
-                <p class="text-xs">No documents on file</p>
+                <p class="text-xs">
+                  No documents on file
+                </p>
               </div>
             </CardContent>
           </Card>

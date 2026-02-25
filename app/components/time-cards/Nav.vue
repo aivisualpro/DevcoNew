@@ -17,11 +17,14 @@ const searchQuery = inject<Ref<string>>('timeCardsSearch', ref(''))
 
 /** Extract date portion from various formats — no timezone conversion */
 function extractDateStr(dateStr: string | null): string {
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   // ISO format: "2024-09-13T07:00:00.000Z"
-  if (dateStr.includes('T')) return dateStr.split('T')[0] || ''
+  if (dateStr.includes('T'))
+    return dateStr.split('T')[0] || ''
   // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return dateStr.substring(0, 10)
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr))
+    return dateStr.substring(0, 10)
   // US format: "9/13/2024 7:16:00 AM" or "9/13/2024"
   const usMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
   if (usMatch) {
@@ -124,7 +127,8 @@ interface YearNode {
 
 // Filter time cards by search query (same logic as table page)
 const filteredTimeCards = computed(() => {
-  if (!searchQuery.value) return allTimeCards.value
+  if (!searchQuery.value)
+    return allTimeCards.value
   const q = searchQuery.value.toLowerCase()
   return allTimeCards.value.filter(tc =>
     (tc.employeeName || '').toLowerCase().includes(q)
@@ -134,29 +138,35 @@ const filteredTimeCards = computed(() => {
 })
 
 const tree = computed<YearNode[]>(() => {
-  if (!isFetched.value) return []
+  if (!isFetched.value)
+    return []
 
   // Group: year → monday → employeeName → dateStr → cards
   const yearMap = new Map<number, Map<string, Map<string, Map<string, any[]>>>>()
 
   for (const tc of filteredTimeCards.value) {
     const dateStr = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
-    if (!dateStr) continue
+    if (!dateStr)
+      continue
 
     const monday = getMondayOfWeek(dateStr)
     const { isoYear } = getISOWeekData(monday)
     const empName = tc.employeeName || 'Unknown'
 
-    if (!yearMap.has(isoYear)) yearMap.set(isoYear, new Map())
+    if (!yearMap.has(isoYear))
+      yearMap.set(isoYear, new Map())
     const weekMap = yearMap.get(isoYear)!
 
-    if (!weekMap.has(monday)) weekMap.set(monday, new Map())
+    if (!weekMap.has(monday))
+      weekMap.set(monday, new Map())
     const empMap = weekMap.get(monday)!
 
-    if (!empMap.has(empName)) empMap.set(empName, new Map())
+    if (!empMap.has(empName))
+      empMap.set(empName, new Map())
     const dayMap = empMap.get(empName)!
 
-    if (!dayMap.has(dateStr)) dayMap.set(dateStr, [])
+    if (!dayMap.has(dateStr))
+      dayMap.set(dateStr, [])
     dayMap.get(dateStr)!.push(tc)
   }
 
@@ -256,8 +266,12 @@ watch(() => tree.value, (t) => {
 
     <!-- Empty -->
     <div v-else-if="tree.length === 0" class="px-3 py-4 text-center">
-      <p class="text-xs text-muted-foreground">No time cards yet</p>
-      <p class="text-[10px] text-muted-foreground/60 mt-1">Click Refresh to sync</p>
+      <p class="text-xs text-muted-foreground">
+        No time cards yet
+      </p>
+      <p class="text-[10px] text-muted-foreground/60 mt-1">
+        Click Refresh to sync
+      </p>
     </div>
 
     <!-- Year accordion -->

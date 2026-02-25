@@ -44,10 +44,12 @@ export function useTimeCardsApi() {
    * Returns null if the required fields are missing.
    */
   function calculateSiteHours(tc: any): number | null {
-    if (!tc.clockIn || !tc.clockOut) return null
+    if (!tc.clockIn || !tc.clockOut)
+      return null
     const clockIn = new Date(tc.clockIn).getTime()
     const clockOut = new Date(tc.clockOut).getTime()
-    if (isNaN(clockIn) || isNaN(clockOut)) return null
+    if (Number.isNaN(clockIn) || Number.isNaN(clockOut))
+      return null
 
     let totalMs = clockOut - clockIn
 
@@ -55,7 +57,7 @@ export function useTimeCardsApi() {
     if (tc.lunchStart && tc.lunchEnd) {
       const lunchStart = new Date(tc.lunchStart).getTime()
       const lunchEnd = new Date(tc.lunchEnd).getTime()
-      if (!isNaN(lunchStart) && !isNaN(lunchEnd)) {
+      if (!Number.isNaN(lunchStart) && !Number.isNaN(lunchEnd)) {
         totalMs -= (lunchEnd - lunchStart)
       }
     }
@@ -67,9 +69,12 @@ export function useTimeCardsApi() {
 
     // Round minutes to nearest quarter-hour
     let roundedMinutes: number
-    if (remainingMinutes <= 14) roundedMinutes = 0
-    else if (remainingMinutes <= 29) roundedMinutes = 15
-    else if (remainingMinutes <= 44) roundedMinutes = 30
+    if (remainingMinutes <= 14)
+      roundedMinutes = 0
+    else if (remainingMinutes <= 29)
+      roundedMinutes = 15
+    else if (remainingMinutes <= 44)
+      roundedMinutes = 30
     else roundedMinutes = 45
 
     // Return as decimal hours (e.g. 8h 15m = 8.25)
@@ -83,7 +88,8 @@ export function useTimeCardsApi() {
   function calculateDriveDistance(tc: any): number | null {
     const locIn = tc.locationIn
     const locOut = tc.locationOut
-    if (!locIn || !locOut) return null
+    if (!locIn || !locOut)
+      return null
 
     // Extract lat/lng — handle { lat, lng }, { latitude, longitude }, or [lat, lng]
     const latIn = Number(locIn.lat ?? locIn.latitude ?? locIn[0])
@@ -91,9 +97,12 @@ export function useTimeCardsApi() {
     const latOut = Number(locOut.lat ?? locOut.latitude ?? locOut[0])
     const lngOut = Number(locOut.lng ?? locOut.longitude ?? locOut[1])
 
-    if (isNaN(latIn) || isNaN(lngIn) || isNaN(latOut) || isNaN(lngOut)) return null
-    if (latIn === 0 && lngIn === 0) return null
-    if (latOut === 0 && lngOut === 0) return null
+    if (Number.isNaN(latIn) || Number.isNaN(lngIn) || Number.isNaN(latOut) || Number.isNaN(lngOut))
+      return null
+    if (latIn === 0 && lngIn === 0)
+      return null
+    if (latOut === 0 && lngOut === 0)
+      return null
 
     // Haversine formula
     const R = 3958.8 // Earth radius in miles
@@ -116,19 +125,22 @@ export function useTimeCardsApi() {
    * Handles bare "12:00:00" times, Firestore timestamps { _seconds }, etc.
    */
   function normalizeTimeField(val: any): string | null {
-    if (!val) return null
+    if (!val)
+      return null
 
     // Firestore Timestamp object → ISO string
     if (typeof val === 'object' && val._seconds) {
       return new Date(val._seconds * 1000).toISOString()
     }
 
-    if (typeof val !== 'string') return String(val)
+    if (typeof val !== 'string')
+      return String(val)
 
     const trimmed = val.trim()
 
     // Already ISO or full date → return as-is
-    if (trimmed.includes('T') || trimmed.includes('/')) return trimmed
+    if (trimmed.includes('T') || trimmed.includes('/'))
+      return trimmed
 
     // Bare 24-hour time like "12:00:00" or "7:30:00" → convert to ISO
     const bareMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
@@ -143,8 +155,10 @@ export function useTimeCardsApi() {
   }
 
   async function fetchAllTimeCards(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null
@@ -213,10 +227,14 @@ export function useTimeCardsApi() {
         // If type is DRIVE TIME and hours is empty, calculate from distance + dump/shop
         if (tc.type === 'DRIVE TIME' && (!tc.hours || tc.hours === 0)) {
           let driveHours = 0
-          if (tc.distance > 0) driveHours += tc.distance / 55
-          if (tc.dumpQty > 0) driveHours += tc.dumpQty * 0.5
-          if (tc.shopQty > 0) driveHours += tc.shopQty * 0.25
-          if (driveHours > 0) tc.hours = Math.round(driveHours * 100) / 100
+          if (tc.distance > 0)
+            driveHours += tc.distance / 55
+          if (tc.dumpQty > 0)
+            driveHours += tc.dumpQty * 0.5
+          if (tc.shopQty > 0)
+            driveHours += tc.shopQty * 0.25
+          if (driveHours > 0)
+            tc.hours = Math.round(driveHours * 100) / 100
         }
 
         return tc
@@ -271,10 +289,14 @@ export function useTimeCardsApi() {
         const dist = Number(tc.distance) || 0
         const dump = Number(tc.dumpQty) || 0
         const shop = Number(tc.shopQty) || 0
-        if (dist > 0) driveHours += dist / 55
-        if (dump > 0) driveHours += dump * 0.5
-        if (shop > 0) driveHours += shop * 0.25
-        if (driveHours > 0) tc.hours = Math.round(driveHours * 100) / 100
+        if (dist > 0)
+          driveHours += dist / 55
+        if (dump > 0)
+          driveHours += dump * 0.5
+        if (shop > 0)
+          driveHours += shop * 0.25
+        if (driveHours > 0)
+          tc.hours = Math.round(driveHours * 100) / 100
       }
 
       _allTimeCards.value[idx] = tc

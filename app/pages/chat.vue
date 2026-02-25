@@ -62,7 +62,8 @@ const activeChat = computed(() => chats.value.find(c => c._id === activeContactI
 
 const chatMessages = computed(() => {
   const chat = activeChat.value
-  if (!chat) return []
+  if (!chat)
+    return []
   // Support messages as array field or sub-collection
   return chat.messages || []
 })
@@ -111,7 +112,8 @@ function sendMessage() {
 
 // ─── Helpers ───
 function getChatName(chat: any): string {
-  if (!chat) return ''
+  if (!chat)
+    return ''
   // Try common field patterns
   return chat.name || chat.contactName || chat.title
     || chat.participant?.name || chat.participants?.map((p: any) => p.name || p).join(', ')
@@ -129,7 +131,8 @@ function getChatRole(chat: any): string {
 }
 
 function getLastMessage(chat: any): string {
-  if (chat.lastMessage) return typeof chat.lastMessage === 'string' ? chat.lastMessage : chat.lastMessage.text || ''
+  if (chat.lastMessage)
+    return typeof chat.lastMessage === 'string' ? chat.lastMessage : chat.lastMessage.text || ''
   const msgs = chat.messages || []
   if (msgs.length > 0) {
     const last = msgs[msgs.length - 1]
@@ -140,7 +143,8 @@ function getLastMessage(chat: any): string {
 
 function getLastTime(chat: any): string {
   const dateStr = chat.lastMessageAt || chat.updatedAt || chat.lastTime || chat.createdAt
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   return formatRelativeTime(dateStr)
 }
 
@@ -153,7 +157,8 @@ function isOnline(chat: any): boolean {
 }
 
 function getMessageSender(msg: any): string {
-  if (msg.sender === 'me' || msg.from === 'me' || msg.direction === 'outgoing') return 'me'
+  if (msg.sender === 'me' || msg.from === 'me' || msg.direction === 'outgoing')
+    return 'me'
   return 'them'
 }
 
@@ -163,7 +168,8 @@ function getMessageText(msg: any): string {
 
 function getMessageTime(msg: any): string {
   const t = msg.time || msg.timestamp || msg.createdAt || msg.sentAt
-  if (!t) return ''
+  if (!t)
+    return ''
   try {
     return new Date(t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
   }
@@ -175,7 +181,8 @@ function getMessageId(msg: any, idx: number): string {
 }
 
 function formatRelativeTime(dateStr: string): string {
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   try {
     const d = new Date(dateStr)
     const now = new Date()
@@ -184,11 +191,16 @@ function formatRelativeTime(dateStr: string): string {
     const diffHr = Math.floor(diffMs / 3600000)
     const diffDay = Math.floor(diffMs / 86400000)
 
-    if (diffMin < 1) return 'now'
-    if (diffMin < 60) return `${diffMin}m`
-    if (diffHr < 24) return `${diffHr}h`
-    if (diffDay < 2) return 'Yesterday'
-    if (diffDay < 7) return `${diffDay}d ago`
+    if (diffMin < 1)
+      return 'now'
+    if (diffMin < 60)
+      return `${diffMin}m`
+    if (diffHr < 24)
+      return `${diffHr}h`
+    if (diffDay < 2)
+      return 'Yesterday'
+    if (diffDay < 7)
+      return `${diffDay}d ago`
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
   catch { return String(dateStr) }

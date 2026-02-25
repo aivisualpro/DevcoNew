@@ -17,7 +17,8 @@ function startEdit(tcId: string, field: 'dumpQty' | 'shopQty', currentVal: numbe
 }
 
 async function saveEdit() {
-  if (!editingCell.value) return
+  if (!editingCell.value)
+    return
   const { id, field } = editingCell.value
   try {
     await updateTimeCard(id, { [field]: editingValue.value })
@@ -36,7 +37,8 @@ function cancelEdit() {
 // Parse route: /time-cards/:year/:mondayStr/:employeeName/:dateStr
 const slugParts = computed(() => {
   const slug = route.params.slug
-  if (Array.isArray(slug)) return slug
+  if (Array.isArray(slug))
+    return slug
   return slug ? slug.split('/') : []
 })
 
@@ -68,9 +70,12 @@ watchEffect(() => {
 
 // ─── Helpers ───
 function extractDateStr(dateStr: string | null): string {
-  if (!dateStr) return ''
-  if (dateStr.includes('T')) return dateStr.split('T')[0] || ''
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return dateStr.substring(0, 10)
+  if (!dateStr)
+    return ''
+  if (dateStr.includes('T'))
+    return dateStr.split('T')[0] || ''
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr))
+    return dateStr.substring(0, 10)
   // US format: "9/13/2024 7:16:00 AM"
   const usMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
   if (usMatch) {
@@ -100,7 +105,8 @@ function getISOYear(dateStr: string): number {
 }
 
 function formatTime(dateStr: string | null): string {
-  if (!dateStr) return '—'
+  if (!dateStr)
+    return '—'
   // ISO: "2024-09-13T07:00:00.000Z"
   if (dateStr.includes('T')) {
     const timePart = dateStr.split('T')[1]
@@ -131,7 +137,8 @@ function formatTime(dateStr: string | null): string {
 }
 
 function formatFullDate(dateStr: string): string {
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   const [y, m, d] = dateStr.split('-')
   const date = new Date(Number(y), Number(m) - 1, Number(d))
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -140,15 +147,18 @@ function formatFullDate(dateStr: string): string {
 }
 
 function shortDate(str: string): string {
-  if (!str) return ''
+  if (!str)
+    return ''
   const [y, m, d] = str.split('-')
   return `${m}/${d}/${y}`
 }
 
 /** Parse a numeric value that might be stored as "$31.20" or "25.00" or a raw number */
 function toNum(val: any): number {
-  if (val == null) return 0
-  if (typeof val === 'number') return val
+  if (val == null)
+    return 0
+  if (typeof val === 'number')
+    return val
   const cleaned = String(val).replace(/[^0-9.\-]/g, '')
   return Number(cleaned) || 0
 }
@@ -162,10 +172,12 @@ function fmtMoney(n: number) {
 }
 
 function formatLocation(loc: any): string {
-  if (!loc) return '—'
+  if (!loc)
+    return '—'
   const lat = Number(loc.lat ?? loc.latitude ?? loc[0])
   const lng = Number(loc.lng ?? loc.longitude ?? loc[1])
-  if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return '—'
+  if (Number.isNaN(lat) || Number.isNaN(lng) || (lat === 0 && lng === 0))
+    return '—'
   return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
 }
 
@@ -175,8 +187,14 @@ function getInitials(name: string): string {
 
 function getAvatarColor(name: string): string {
   const colors = [
-    'bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500',
-    'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-pink-500',
+    'bg-blue-500',
+    'bg-emerald-500',
+    'bg-violet-500',
+    'bg-amber-500',
+    'bg-rose-500',
+    'bg-cyan-500',
+    'bg-indigo-500',
+    'bg-pink-500',
   ]
   let hash = 0
   for (let i = 0; i < name.length; i++)
@@ -186,26 +204,31 @@ function getAvatarColor(name: string): string {
 
 // ─── Filtered data for TABLE view ───
 const tableCards = computed(() => {
-  if (!isFetched.value) return []
+  if (!isFetched.value)
+    return []
 
   return allTimeCards.value.filter((tc) => {
     const tcDate = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
-    if (!tcDate) return false
+    if (!tcDate)
+      return false
 
     // Use ISO year (Thursday-based) when filtering by year
     if (year.value) {
       const tcISOYear = getISOYear(tcDate)
-      if (tcISOYear !== Number(year.value)) return false
+      if (tcISOYear !== Number(year.value))
+        return false
     }
 
     if (mondayStr.value) {
       const tcMonday = getMondayOfWeek(tcDate)
-      if (tcMonday !== mondayStr.value) return false
+      if (tcMonday !== mondayStr.value)
+        return false
     }
 
     if (employeeName.value) {
       const tcName = tc.employeeName || ''
-      if (tcName !== employeeName.value) return false
+      if (tcName !== employeeName.value)
+        return false
     }
 
     return true
@@ -215,7 +238,8 @@ const tableCards = computed(() => {
 // Search for table — shared with sidebar nav via provide/inject
 const tableSearch = inject<Ref<string>>('timeCardsSearch', ref(''))
 const filteredTableCards = computed(() => {
-  if (!tableSearch.value) return tableCards.value
+  if (!tableSearch.value)
+    return tableCards.value
   const q = tableSearch.value.toLowerCase()
   return tableCards.value.filter(tc =>
     (tc.employeeName || '').toLowerCase().includes(q)
@@ -276,7 +300,8 @@ onBeforeUnmount(() => {
 
 // ─── Filtered data for DETAIL view ───
 const dayCards = computed(() => {
-  if (!isFetched.value || !dateStr.value || !employeeName.value) return []
+  if (!isFetched.value || !dateStr.value || !employeeName.value)
+    return []
   return allTimeCards.value.filter((tc) => {
     const tcDate = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
     const tcName = tc.employeeName || ''
@@ -292,7 +317,8 @@ const totalDistance = computed(() => dayCards.value.reduce((sum, tc) => sum + (t
 // ─── Click row → navigate to detail ───
 function viewDetail(tc: any) {
   const tcDate = extractDateStr(tc.clockIn) || extractDateStr(tc.scheduleDate) || extractDateStr(tc.createdAt)
-  if (!tcDate) return
+  if (!tcDate)
+    return
   const tcISOYear = getISOYear(tcDate)
   const tcMonday = getMondayOfWeek(tcDate)
   const tcName = tc.employeeName || 'Unknown'
@@ -352,13 +378,27 @@ async function handleRefresh() {
           <Table v-else-if="filteredTableCards.length > 0">
             <TableHeader>
               <TableRow>
-                <TableHead class="text-[11px]">Employee</TableHead>
-                <TableHead class="text-[11px]">Date</TableHead>
-                <TableHead class="text-[11px]">Type</TableHead>
-                <TableHead class="text-[11px]">In / Dump</TableHead>
-                <TableHead class="text-[11px]">Out / Shop</TableHead>
-                <TableHead class="text-[11px] text-right">Hours</TableHead>
-                <TableHead class="text-[11px] text-right">Distance</TableHead>
+                <TableHead class="text-[11px]">
+                  Employee
+                </TableHead>
+                <TableHead class="text-[11px]">
+                  Date
+                </TableHead>
+                <TableHead class="text-[11px]">
+                  Type
+                </TableHead>
+                <TableHead class="text-[11px]">
+                  In / Dump
+                </TableHead>
+                <TableHead class="text-[11px]">
+                  Out / Shop
+                </TableHead>
+                <TableHead class="text-[11px] text-right">
+                  Hours
+                </TableHead>
+                <TableHead class="text-[11px] text-right">
+                  Distance
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -417,7 +457,9 @@ async function handleRefresh() {
                       <span class="tabular-nums">{{ tc.dumpQty || 0 }}</span>
                     </button>
                   </template>
-                  <template v-else>{{ formatTime(tc.clockIn) }}</template>
+                  <template v-else>
+                    {{ formatTime(tc.clockIn) }}
+                  </template>
                 </TableCell>
                 <!-- DRIVE TIME: show Shop Qty; SITE TIME: show Clock Out -->
                 <TableCell class="text-xs tabular-nums">
@@ -448,7 +490,9 @@ async function handleRefresh() {
                       <span class="tabular-nums">{{ tc.shopQty || 0 }}</span>
                     </button>
                   </template>
-                  <template v-else>{{ formatTime(tc.clockOut) }}</template>
+                  <template v-else>
+                    {{ formatTime(tc.clockOut) }}
+                  </template>
                 </TableCell>
                 <TableCell class="text-right text-xs font-semibold tabular-nums text-primary">
                   {{ fmtNum(toNum(tc.hours)) }}
@@ -475,7 +519,9 @@ async function handleRefresh() {
             <div class="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Icon name="i-lucide-clock" class="size-8 text-muted-foreground/50" />
             </div>
-            <h3 class="text-lg font-bold">No Time Cards</h3>
+            <h3 class="text-lg font-bold">
+              No Time Cards
+            </h3>
             <p class="text-sm text-muted-foreground mt-1">
               {{ tableSearch ? 'No results match your search.' : 'No records found for this selection.' }}
             </p>
@@ -498,8 +544,12 @@ async function handleRefresh() {
               {{ getInitials(employeeName) }}
             </div>
             <div>
-              <p class="text-sm font-bold">{{ employeeName }}</p>
-              <p class="text-xs text-muted-foreground">{{ formatFullDate(dateStr) }}</p>
+              <p class="text-sm font-bold">
+                {{ employeeName }}
+              </p>
+              <p class="text-xs text-muted-foreground">
+                {{ formatFullDate(dateStr) }}
+              </p>
             </div>
           </div>
         </div>
@@ -519,8 +569,12 @@ async function handleRefresh() {
                     <Icon name="i-lucide-clock" class="size-5 text-primary" />
                   </div>
                   <div>
-                    <p class="text-xl font-bold tabular-nums">{{ fmtNum(totalHours) }}</p>
-                    <p class="text-[10px] text-muted-foreground">Total Hours</p>
+                    <p class="text-xl font-bold tabular-nums">
+                      {{ fmtNum(totalHours) }}
+                    </p>
+                    <p class="text-[10px] text-muted-foreground">
+                      Total Hours
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -530,8 +584,12 @@ async function handleRefresh() {
                     <Icon name="i-lucide-map-pin" class="size-5 text-emerald-500" />
                   </div>
                   <div>
-                    <p class="text-xl font-bold tabular-nums">{{ fmtMoney(totalSiteRate) }}</p>
-                    <p class="text-[10px] text-muted-foreground">Site Rate</p>
+                    <p class="text-xl font-bold tabular-nums">
+                      {{ fmtMoney(totalSiteRate) }}
+                    </p>
+                    <p class="text-[10px] text-muted-foreground">
+                      Site Rate
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -541,8 +599,12 @@ async function handleRefresh() {
                     <Icon name="i-lucide-car" class="size-5 text-blue-500" />
                   </div>
                   <div>
-                    <p class="text-xl font-bold tabular-nums">{{ fmtMoney(totalDriveRate) }}</p>
-                    <p class="text-[10px] text-muted-foreground">Drive Rate</p>
+                    <p class="text-xl font-bold tabular-nums">
+                      {{ fmtMoney(totalDriveRate) }}
+                    </p>
+                    <p class="text-[10px] text-muted-foreground">
+                      Drive Rate
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -552,8 +614,12 @@ async function handleRefresh() {
                     <Icon name="i-lucide-route" class="size-5 text-amber-500" />
                   </div>
                   <div>
-                    <p class="text-xl font-bold tabular-nums">{{ fmtNum(totalDistance, 1) }} mi</p>
-                    <p class="text-[10px] text-muted-foreground">Distance</p>
+                    <p class="text-xl font-bold tabular-nums">
+                      {{ fmtNum(totalDistance, 1) }} mi
+                    </p>
+                    <p class="text-[10px] text-muted-foreground">
+                      Distance
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -589,7 +655,9 @@ async function handleRefresh() {
                         <Icon name="i-lucide-log-in" class="size-3 text-emerald-500" />
                         Clock In
                       </p>
-                      <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.clockIn) }}</p>
+                      <p class="text-sm font-semibold mt-0.5">
+                        {{ formatTime(tc.clockIn) }}
+                      </p>
                     </div>
                     <!-- DRIVE TIME: show locations instead of lunch -->
                     <template v-if="tc.type === 'DRIVE TIME'">
@@ -598,14 +666,18 @@ async function handleRefresh() {
                           <Icon name="i-lucide-map-pin" class="size-3 text-blue-500" />
                           Location In
                         </p>
-                        <p class="text-xs font-semibold mt-0.5 tabular-nums">{{ formatLocation(tc.locationIn) }}</p>
+                        <p class="text-xs font-semibold mt-0.5 tabular-nums">
+                          {{ formatLocation(tc.locationIn) }}
+                        </p>
                       </div>
                       <div>
                         <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                           <Icon name="i-lucide-map-pin-check-inside" class="size-3 text-blue-500" />
                           Location Out
                         </p>
-                        <p class="text-xs font-semibold mt-0.5 tabular-nums">{{ formatLocation(tc.locationOut) }}</p>
+                        <p class="text-xs font-semibold mt-0.5 tabular-nums">
+                          {{ formatLocation(tc.locationOut) }}
+                        </p>
                       </div>
                     </template>
                     <!-- SITE TIME / other: show lunch -->
@@ -615,14 +687,18 @@ async function handleRefresh() {
                           <Icon name="i-lucide-utensils" class="size-3 text-amber-500" />
                           Lunch Start
                         </p>
-                        <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.lunchStart) }}</p>
+                        <p class="text-sm font-semibold mt-0.5">
+                          {{ formatTime(tc.lunchStart) }}
+                        </p>
                       </div>
                       <div>
                         <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                           <Icon name="i-lucide-utensils-crossed" class="size-3 text-amber-500" />
                           Lunch End
                         </p>
-                        <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.lunchEnd) }}</p>
+                        <p class="text-sm font-semibold mt-0.5">
+                          {{ formatTime(tc.lunchEnd) }}
+                        </p>
                       </div>
                     </template>
                     <div>
@@ -630,27 +706,35 @@ async function handleRefresh() {
                         <Icon name="i-lucide-log-out" class="size-3 text-rose-500" />
                         Clock Out
                       </p>
-                      <p class="text-sm font-semibold mt-0.5">{{ formatTime(tc.clockOut) }}</p>
+                      <p class="text-sm font-semibold mt-0.5">
+                        {{ formatTime(tc.clockOut) }}
+                      </p>
                     </div>
                   </div>
 
                   <div class="mt-3 grid gap-3" :class="tc.type === 'DRIVE TIME' ? 'grid-cols-2' : 'grid-cols-1'">
                     <!-- SITE TIME: show Site Rate only -->
                     <div v-if="tc.type !== 'DRIVE TIME'" class="rounded-lg bg-emerald-500/5 p-2.5 ring-1 ring-emerald-200/30 dark:ring-emerald-800/30">
-                      <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Site Rate</p>
+                      <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Site Rate
+                      </p>
                       <p class="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                         {{ fmtMoney(toNum(tc.hourlyRateSITE)) }}<span class="text-[10px] font-normal">/hr</span>
                       </p>
                     </div>
                     <!-- DRIVE TIME: show Drive Rate + Distance -->
                     <div v-if="tc.type !== 'SITE TIME'" class="rounded-lg bg-blue-500/5 p-2.5 ring-1 ring-blue-200/30 dark:ring-blue-800/30">
-                      <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Drive Rate</p>
+                      <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Drive Rate
+                      </p>
                       <p class="text-sm font-bold tabular-nums text-blue-600 dark:text-blue-400">
                         {{ fmtMoney(toNum(tc.hourlyRateDrive)) }}<span class="text-[10px] font-normal">/hr</span>
                       </p>
                     </div>
                     <div v-if="tc.type !== 'SITE TIME'" class="rounded-lg bg-amber-500/5 p-2.5 ring-1 ring-amber-200/30 dark:ring-amber-800/30">
-                      <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Distance</p>
+                      <p class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Distance
+                      </p>
                       <p class="text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400">
                         {{ fmtNum(toNum(tc.distance), 1) }} <span class="text-[10px] font-normal">mi</span>
                       </p>
@@ -658,7 +742,9 @@ async function handleRefresh() {
                   </div>
 
                   <div v-if="tc.comments" class="mt-3">
-                    <p class="text-xs text-muted-foreground italic leading-relaxed">{{ tc.comments }}</p>
+                    <p class="text-xs text-muted-foreground italic leading-relaxed">
+                      {{ tc.comments }}
+                    </p>
                   </div>
 
                   <div v-if="tc.dumpWashout" class="mt-2">
@@ -675,7 +761,9 @@ async function handleRefresh() {
               <div class="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Icon name="i-lucide-clock" class="size-8 text-muted-foreground/50" />
               </div>
-              <h3 class="text-lg font-bold">No Time Cards</h3>
+              <h3 class="text-lg font-bold">
+                No Time Cards
+              </h3>
               <p class="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
                 No time card entries found for this employee on this date.
               </p>

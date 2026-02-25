@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { useEditor, EditorContent } from '@tiptap/vue-3'
-import { BubbleMenu } from '@tiptap/vue-3/menus'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import Underline from '@tiptap/extension-underline'
-import TextAlign from '@tiptap/extension-text-align'
+import type { ProposalBlock } from '~/composables/useProposalEditor'
+import Color from '@tiptap/extension-color'
+import FontSize from '@tiptap/extension-font-size'
 import Highlight from '@tiptap/extension-highlight'
-import TaskList from '@tiptap/extension-task-list'
-import TaskItem from '@tiptap/extension-task-item'
-import { Table } from '@tiptap/extension-table'
-import TableRow from '@tiptap/extension-table-row'
-import TableCell from '@tiptap/extension-table-cell'
-import TableHeader from '@tiptap/extension-table-header'
+import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
+import Placeholder from '@tiptap/extension-placeholder'
+import { Table } from '@tiptap/extension-table'
+import TableCell from '@tiptap/extension-table-cell'
+import TableHeader from '@tiptap/extension-table-header'
+import TableRow from '@tiptap/extension-table-row'
+import TaskItem from '@tiptap/extension-task-item'
+import TaskList from '@tiptap/extension-task-list'
+import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
-import Color from '@tiptap/extension-color'
-import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import Typography from '@tiptap/extension-typography'
-import FontSize from '@tiptap/extension-font-size'
-import type { ProposalBlock } from '~/composables/useProposalEditor'
+import Underline from '@tiptap/extension-underline'
+import StarterKit from '@tiptap/starter-kit'
+import { EditorContent, useEditor } from '@tiptap/vue-3'
+import { BubbleMenu } from '@tiptap/vue-3/menus'
 
 const props = defineProps<{
   modelValue: string
@@ -55,40 +55,51 @@ const lineSpacings = [
 const currentLineSpacing = ref('1.5')
 
 function setFontSize(size: string) {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   editor.value.chain().focus().setFontSize(`${size}px`).run()
   showFontSizeMenu.value = false
 }
 
 function decreaseFontSize() {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   const current = getCurrentFontSize()
   const idx = fontSizes.indexOf(current)
-  if (idx > 0) setFontSize(fontSizes[idx - 1]!)
-  else if (idx === -1) setFontSize('12')
+  if (idx > 0)
+    setFontSize(fontSizes[idx - 1]!)
+  else if (idx === -1)
+    setFontSize('12')
 }
 
 function increaseFontSize() {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   const current = getCurrentFontSize()
   const idx = fontSizes.indexOf(current)
-  if (idx < fontSizes.length - 1 && idx !== -1) setFontSize(fontSizes[idx + 1]!)
-  else if (idx === -1) setFontSize('16')
+  if (idx < fontSizes.length - 1 && idx !== -1)
+    setFontSize(fontSizes[idx + 1]!)
+  else if (idx === -1)
+    setFontSize('16')
 }
 
 function getCurrentFontSize(): string {
-  if (!editor.value) return '14'
+  if (!editor.value)
+    return '14'
   const attrs = editor.value.getAttributes('textStyle')
-  if (attrs.fontSize) return attrs.fontSize.replace('px', '')
+  if (attrs.fontSize)
+    return attrs.fontSize.replace('px', '')
   return '14'
 }
 
 function setLineSpacing(value: string) {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   currentLineSpacing.value = value
   // Apply via CSS to the editor content
   const el = document.querySelector('.proposal-editor-content') as HTMLElement
-  if (el) el.style.lineHeight = value
+  if (el)
+    el.style.lineHeight = value
   showLineSpacingMenu.value = false
 }
 
@@ -112,13 +123,15 @@ const slashCommands = [
 ]
 
 const filteredSlashCommands = computed(() => {
-  if (!slashFilter.value) return slashCommands
+  if (!slashFilter.value)
+    return slashCommands
   const q = slashFilter.value.toLowerCase()
   return slashCommands.filter(c => c.label.toLowerCase().includes(q) || c.description.toLowerCase().includes(q) || c.category.toLowerCase().includes(q))
 })
 
 const filteredBlocks = computed(() => {
-  if (!blockSearchQuery.value) return props.savedBlocks
+  if (!blockSearchQuery.value)
+    return props.savedBlocks
   const q = blockSearchQuery.value.toLowerCase()
   return props.savedBlocks.filter(b => b.title.toLowerCase().includes(q) || (b.description || '').toLowerCase().includes(q) || (b.category || '').toLowerCase().includes(q))
 })
@@ -177,7 +190,8 @@ const editor = useEditor({
         if (event.key === 'Enter') {
           event.preventDefault()
           const cmd = filteredSlashCommands.value[slashSelectedIndex.value]
-          if (cmd) executeSlashCommand(cmd.id)
+          if (cmd)
+            executeSlashCommand(cmd.id)
           return true
         }
         if (event.key === 'Escape') {
@@ -207,7 +221,7 @@ const editor = useEditor({
       '\n',
     )
 
-    const slashMatch = textBefore.match(/\/([a-zA-Z0-9-]*)$/)
+    const slashMatch = textBefore.match(/\/([a-z0-9-]*)$/i)
     if (slashMatch) {
       slashFilter.value = slashMatch[1] || ''
       slashSelectedIndex.value = 0
@@ -237,12 +251,13 @@ watch(() => props.modelValue, (val) => {
 
 // ─── Slash Command Execution ───
 function executeSlashCommand(cmdId: string) {
-  if (!editor.value) return
+  if (!editor.value)
+    return
 
   // Delete the slash and filter text
   const { from } = editor.value.state.selection
   const textBefore = editor.value.state.doc.textBetween(Math.max(0, from - 30), from, '\n')
-  const slashMatch = textBefore.match(/\/([a-zA-Z0-9-]*)$/)
+  const slashMatch = textBefore.match(/\/([a-z0-9-]*)$/i)
   if (slashMatch) {
     const deleteFrom = from - slashMatch[0].length
     editor.value.chain().focus().deleteRange({ from: deleteFrom, to: from }).run()
@@ -316,7 +331,8 @@ function closeSlashMenu() {
 }
 
 function insertBlock(block: ProposalBlock) {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   editor.value.chain().focus().insertContent(block.content).run()
   showBlocksPanel.value = false
   blockSearchQuery.value = ''
@@ -324,10 +340,12 @@ function insertBlock(block: ProposalBlock) {
 
 // ─── Toolbar helpers ───
 function setLink() {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   const previousUrl = editor.value.getAttributes('link').href
   const url = window.prompt('Enter URL:', previousUrl)
-  if (url === null) return
+  if (url === null)
+    return
   if (url === '') {
     editor.value.chain().focus().extendMarkRange('link').unsetLink().run()
     return
@@ -336,7 +354,8 @@ function setLink() {
 }
 
 function insertImage() {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   const url = window.prompt('Enter image URL:')
   if (url) {
     editor.value.chain().focus().setImage({ src: url }).run()
@@ -357,7 +376,8 @@ const textColors = [
 
 const showColorPicker = ref(false)
 function setColor(color: string) {
-  if (!editor.value) return
+  if (!editor.value)
+    return
   if (!color) { editor.value.chain().focus().unsetColor().run() }
   else { editor.value.chain().focus().setColor(color).run() }
   showColorPicker.value = false
@@ -367,7 +387,8 @@ function setColor(color: string) {
 function getGroupedCommands() {
   const groups: Record<string, typeof slashCommands> = {}
   filteredSlashCommands.value.forEach((cmd) => {
-    if (!groups[cmd.category]) groups[cmd.category] = []
+    if (!groups[cmd.category])
+      groups[cmd.category] = []
     groups[cmd.category]!.push(cmd)
   })
   return groups
@@ -700,7 +721,7 @@ onUnmounted(() => {
       <div
         v-if="showSlashMenu && filteredSlashCommands.length > 0"
         class="absolute z-50 bg-popover border rounded-xl shadow-2xl overflow-hidden w-72"
-        :style="{ top: slashMenuPos.top + 'px', left: slashMenuPos.left + 'px' }"
+        :style="{ top: `${slashMenuPos.top}px`, left: `${slashMenuPos.left}px` }"
       >
         <div class="max-h-80 overflow-y-auto py-1">
           <template v-for="(commands, category) in getGroupedCommands()" :key="category">
@@ -719,8 +740,12 @@ onUnmounted(() => {
                 <Icon :name="cmd.icon" class="size-4" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs font-semibold truncate">{{ cmd.label }}</p>
-                <p class="text-[10px] text-muted-foreground truncate">{{ cmd.description }}</p>
+                <p class="text-xs font-semibold truncate">
+                  {{ cmd.label }}
+                </p>
+                <p class="text-[10px] text-muted-foreground truncate">
+                  {{ cmd.description }}
+                </p>
               </div>
             </button>
           </template>
@@ -737,8 +762,12 @@ onUnmounted(() => {
               <Icon name="i-lucide-bookmark" class="size-4 text-white" />
             </div>
             <div>
-              <h3 class="text-sm font-bold">Saved Blocks</h3>
-              <p class="text-[10px] text-muted-foreground">{{ savedBlocks.length }} blocks available</p>
+              <h3 class="text-sm font-bold">
+                Saved Blocks
+              </h3>
+              <p class="text-[10px] text-muted-foreground">
+                {{ savedBlocks.length }} blocks available
+              </p>
             </div>
           </div>
           <button class="size-7 rounded-md bg-muted hover:bg-accent flex items-center justify-center transition-colors" @click="showBlocksPanel = false">
@@ -767,10 +796,16 @@ onUnmounted(() => {
           >
             <div class="p-4">
               <div class="flex items-center justify-between mb-2">
-                <h4 class="text-xs font-bold group-hover:text-primary transition-colors">{{ block.title }}</h4>
-                <Badge variant="secondary" class="text-[9px] font-bold h-4 px-1.5">{{ block.category }}</Badge>
+                <h4 class="text-xs font-bold group-hover:text-primary transition-colors">
+                  {{ block.title }}
+                </h4>
+                <Badge variant="secondary" class="text-[9px] font-bold h-4 px-1.5">
+                  {{ block.category }}
+                </Badge>
               </div>
-              <p v-if="block.description" class="text-[10px] text-muted-foreground mb-2 line-clamp-2">{{ block.description }}</p>
+              <p v-if="block.description" class="text-[10px] text-muted-foreground mb-2 line-clamp-2">
+                {{ block.description }}
+              </p>
               <div class="text-[10px] text-muted-foreground/60 flex items-center gap-1">
                 <Icon name="i-lucide-clock" class="size-3" />
                 {{ new Date(block.updatedAt).toLocaleDateString() }}
@@ -786,8 +821,12 @@ onUnmounted(() => {
             <div class="size-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <Icon name="i-lucide-bookmark" class="size-6 text-muted-foreground/40" />
             </div>
-            <p class="text-xs font-semibold">No Blocks Found</p>
-            <p class="text-[10px] text-muted-foreground mt-1">Save content blocks using / commands or the selection toolbar.</p>
+            <p class="text-xs font-semibold">
+              No Blocks Found
+            </p>
+            <p class="text-[10px] text-muted-foreground mt-1">
+              Save content blocks using / commands or the selection toolbar.
+            </p>
           </div>
         </div>
       </div>

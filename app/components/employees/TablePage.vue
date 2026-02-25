@@ -70,9 +70,12 @@ function compare(a: any, b: any, key: string, dir: SortDir): number {
   const av = a[key]
   const bv = b[key]
 
-  if (av == null && bv == null) return 0
-  if (av == null) return 1
-  if (bv == null) return -1
+  if (av == null && bv == null)
+    return 0
+  if (av == null)
+    return 1
+  if (bv == null)
+    return -1
 
   let result = 0
   if (key === 'dateHired' || key === 'createdAt') {
@@ -143,7 +146,8 @@ function loadMore() {
 // Scroll handler for infinite loading
 function handleScroll(e: Event) {
   const target = e.target as HTMLElement
-  if (!target) return
+  if (!target)
+    return
   const threshold = 200
   if (target.scrollHeight - target.scrollTop - target.clientHeight < threshold) {
     loadMore()
@@ -402,7 +406,9 @@ async function handleCreateEmployee() {
         <div class="flex-1 flex items-center justify-center">
           <div class="flex flex-col items-center gap-2 text-muted-foreground">
             <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-            <p class="text-sm">Loading employees...</p>
+            <p class="text-sm">
+              Loading employees...
+            </p>
           </div>
         </div>
       </template>
@@ -464,9 +470,15 @@ async function handleCreateEmployee() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Super Admin">Super Admin</SelectItem>
-                <SelectItem value="Admin">Admin</SelectItem>
-                <SelectItem value="Employee">Employee</SelectItem>
+                <SelectItem value="Super Admin">
+                  Super Admin
+                </SelectItem>
+                <SelectItem value="Admin">
+                  Admin
+                </SelectItem>
+                <SelectItem value="Employee">
+                  Employee
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -477,8 +489,12 @@ async function handleCreateEmployee() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Active">
+                  Active
+                </SelectItem>
+                <SelectItem value="Inactive">
+                  Inactive
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -30,7 +30,8 @@ export default defineEventHandler(async (event) => {
     return { success: true, message: 'Proposal saved' }
   }
   catch (error: any) {
-    if (error.statusCode) throw error
+    if (error.statusCode)
+      throw error
     console.error('[Proposal PUT Error]', error)
     throw createError({
       statusCode: 500,

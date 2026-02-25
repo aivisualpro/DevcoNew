@@ -41,7 +41,8 @@ const totalPages = ref(1)
 
 function recalcPageBreaks() {
   const editorEl = document.querySelector('.proposal-editor-content') as HTMLElement
-  if (!editorEl) return
+  if (!editorEl)
+    return
   const contentHeight = editorEl.scrollHeight
   const firstPageContent = CONTENT_AREA_PX - HEADER_HEIGHT_PX
   const breaks: number[] = []
@@ -326,7 +327,8 @@ async function handleBlockSave(data: { title: string, description: string, categ
 
 // ─── Format last saved time ───
 function fmtLastSaved(dateStr: string | null) {
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   try {
     const d = new Date(dateStr)
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -336,7 +338,8 @@ function fmtLastSaved(dateStr: string | null) {
 
 // Word & character count
 const wordCount = computed(() => {
-  if (!proposalContent.value) return 0
+  if (!proposalContent.value)
+    return 0
   const text = proposalContent.value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   return text ? text.split(' ').length : 0
 })
@@ -352,8 +355,12 @@ const wordCount = computed(() => {
             <Icon name="i-lucide-file-text" class="size-3.5 text-white" />
           </div>
           <div>
-            <h2 class="text-xs font-bold">Proposal Editor</h2>
-            <p class="text-[9px] text-muted-foreground">{{ estimate?.estimate || 'Document' }}</p>
+            <h2 class="text-xs font-bold">
+              Proposal Editor
+            </h2>
+            <p class="text-[9px] text-muted-foreground">
+              {{ estimate?.estimate || 'Document' }}
+            </p>
           </div>
         </div>
 
@@ -418,7 +425,9 @@ const wordCount = computed(() => {
               <Icon name="i-lucide-file-text" class="size-6 text-primary/60" />
             </div>
           </div>
-          <p class="text-sm text-muted-foreground animate-pulse">Loading proposal editor...</p>
+          <p class="text-sm text-muted-foreground animate-pulse">
+            Loading proposal editor...
+          </p>
         </div>
       </div>
 
@@ -448,7 +457,7 @@ const wordCount = computed(() => {
               v-for="(breakPos, idx) in pageBreaks"
               :key="idx"
               class="page-break-indicator"
-              :style="{ top: breakPos + 'px' }"
+              :style="{ top: `${breakPos}px` }"
             >
               <div class="page-break-shadow" />
               <div class="page-break-page-label">

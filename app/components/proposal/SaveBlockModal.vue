@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const _props = defineProps<{
   modelValue: boolean
 }>()
 
@@ -15,7 +15,8 @@ const category = ref('General')
 const categories = ['General', 'Scope of Work', 'Terms & Conditions', 'Safety', 'Materials', 'Equipment', 'Labor', 'Permits', 'Warranty', 'Insurance', 'Payment', 'Other']
 
 function handleSave() {
-  if (!title.value.trim()) return
+  if (!title.value.trim())
+    return
   emit('save', {
     title: title.value,
     description: description.value,
@@ -46,8 +47,12 @@ function close() {
               <Icon name="i-lucide-bookmark-plus" class="size-5 text-white" />
             </div>
             <div>
-              <h3 class="text-base font-bold">Save as Reusable Block</h3>
-              <p class="text-[11px] text-muted-foreground">This block will be available in all proposals via /blocks</p>
+              <h3 class="text-base font-bold">
+                Save as Reusable Block
+              </h3>
+              <p class="text-[11px] text-muted-foreground">
+                This block will be available in all proposals via /blocks
+              </p>
             </div>
           </div>
         </div>

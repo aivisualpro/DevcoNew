@@ -153,8 +153,10 @@ function getTypeConfig(type: string): { icon: string, color: string } {
 }
 
 function getUserName(user: any): string {
-  if (!user) return 'System'
-  if (typeof user === 'string') return user
+  if (!user)
+    return 'System'
+  if (typeof user === 'string')
+    return user
   return user.name || user.email || user.displayName || 'Unknown User'
 }
 
@@ -165,8 +167,14 @@ function getUserInitials(user: any): string {
 
 function getAvatarColor(name: string): string {
   const colors = [
-    'bg-blue-600', 'bg-emerald-600', 'bg-violet-600', 'bg-amber-600',
-    'bg-rose-600', 'bg-cyan-600', 'bg-indigo-600', 'bg-pink-600',
+    'bg-blue-600',
+    'bg-emerald-600',
+    'bg-violet-600',
+    'bg-amber-600',
+    'bg-rose-600',
+    'bg-cyan-600',
+    'bg-indigo-600',
+    'bg-pink-600',
   ]
   let hash = 0
   for (let i = 0; i < name.length; i++)
@@ -175,7 +183,8 @@ function getAvatarColor(name: string): string {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   try {
     const d = new Date(dateStr)
     const now = new Date()
@@ -184,17 +193,22 @@ function formatDate(dateStr: string) {
     const diffHr = Math.floor(diffMs / 3600000)
     const diffDay = Math.floor(diffMs / 86400000)
 
-    if (diffMin < 1) return 'Just now'
-    if (diffMin < 60) return `${diffMin}m ago`
-    if (diffHr < 24) return `${diffHr}h ago`
-    if (diffDay < 7) return `${diffDay}d ago`
+    if (diffMin < 1)
+      return 'Just now'
+    if (diffMin < 60)
+      return `${diffMin}m ago`
+    if (diffHr < 24)
+      return `${diffHr}h ago`
+    if (diffDay < 7)
+      return `${diffDay}d ago`
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
   catch { return dateStr }
 }
 
 function formatFullDate(dateStr: string) {
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   try {
     return new Date(dateStr).toLocaleString('en-US', {
       month: 'short',

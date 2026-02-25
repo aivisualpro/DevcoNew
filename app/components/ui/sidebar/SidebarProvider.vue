@@ -6,12 +6,6 @@ import { computed, ref } from 'vue'
 import { cn } from '@/lib/utils'
 import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from './utils'
 
-// Use Nuxt's useCookie for SSR-safe state persistence
-const sidebarCookie = useCookie<string>(SIDEBAR_COOKIE_NAME, {
-  default: () => 'true',
-  maxAge: SIDEBAR_COOKIE_MAX_AGE,
-})
-
 const props = withDefaults(defineProps<{
   defaultOpen?: boolean
   open?: boolean
@@ -25,6 +19,12 @@ const emits = defineEmits<{
   'update:open': [open: boolean]
 }>()
 
+// Use Nuxt's useCookie for SSR-safe state persistence
+const sidebarCookie = useCookie<string>(SIDEBAR_COOKIE_NAME, {
+  default: () => 'true',
+  maxAge: SIDEBAR_COOKIE_MAX_AGE,
+})
+
 const isMobile = useMediaQuery('(max-width: 768px)')
 const openMobile = ref(false)
 
@@ -36,9 +36,10 @@ const open = ref(initialOpen) as Ref<boolean>
 // Sync with v-model if provided
 if (props.open !== undefined) {
   watch(() => props.open, (val) => {
-    if (val !== undefined) open.value = val
+    if (val !== undefined)
+      open.value = val
   })
-  watch(open, (val) => emits('update:open', val))
+  watch(open, val => emits('update:open', val))
 }
 
 function setOpen(value: boolean) {

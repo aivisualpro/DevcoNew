@@ -1,10 +1,11 @@
 <script setup lang="ts">
-const props = defineProps<{
+const _props = defineProps<{
   estimate: any
 }>()
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
   }
@@ -57,9 +58,15 @@ function formatDate(value: string): string {
         Customer Contact:
       </p>
       <div class="pl-6 space-y-0.5">
-        <p class="text-sm font-bold">{{ estimate?.customerName || '—' }}</p>
-        <p v-if="estimate?.contactName" class="text-sm font-medium text-foreground/80">{{ estimate.contactName }}</p>
-        <p v-if="estimate?.jobAddress" class="text-sm text-muted-foreground">{{ estimate.jobAddress }}</p>
+        <p class="text-sm font-bold">
+          {{ estimate?.customerName || '—' }}
+        </p>
+        <p v-if="estimate?.contactName" class="text-sm font-medium text-foreground/80">
+          {{ estimate.contactName }}
+        </p>
+        <p v-if="estimate?.jobAddress" class="text-sm text-muted-foreground">
+          {{ estimate.jobAddress }}
+        </p>
         <p v-if="estimate?.contactPhone" class="text-sm text-muted-foreground tabular-nums">
           {{ estimate.contactPhone }}
         </p>

@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     const firestore = useFirestoreAdmin()
     const normalizedEmail = email.toLowerCase().trim()
 
-    console.log('[Auth Login] Attempting login for:', normalizedEmail)
+    console.warn('[Auth Login] Attempting login for:', normalizedEmail)
 
     // Try exact match first
     let snapshot = await firestore
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     // If no exact match, try fetching all employees and do case-insensitive match
     // (Firestore queries are case-sensitive, so stored email might have different casing)
     if (snapshot.empty) {
-      console.log('[Auth Login] No exact email match, trying case-insensitive lookup...')
+      console.warn('[Auth Login] No exact email match, trying case-insensitive lookup...')
       const allSnapshot = await firestore
         .collection('devcoEmployees')
         .get()
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
       )
 
       if (!matchingDoc) {
-        console.log('[Auth Login] No employee found for email:', normalizedEmail)
+        console.warn('[Auth Login] No employee found for email:', normalizedEmail)
         throw createError({
           statusCode: 401,
           statusMessage: 'Invalid email or password',
@@ -55,10 +55,10 @@ export default defineEventHandler(async (event) => {
 
     const doc = snapshot.docs[0]
     const employee = doc.data()
-    console.log('[Auth Login] Found employee:', employee.firstName, employee.lastName, '| Status:', employee.status)
+    console.warn('[Auth Login] Found employee:', employee.firstName, employee.lastName, '| Status:', employee.status)
 
     // Check password
-    console.log('[Auth Login] Password check — stored length:', employee.password?.length, '| input length:', password.length)
+    console.warn('[Auth Login] Password check — stored length:', employee.password?.length, '| input length:', password.length)
     if (employee.password !== password) {
       throw createError({
         statusCode: 401,

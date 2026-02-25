@@ -42,7 +42,8 @@ function sanitizeForFirestore(value: any): any {
  * plain arrays [lat, lng], and nested $numberDouble wrappers.
  */
 function extractLocation(loc: any): { lat: number, lng: number } | null {
-  if (!loc) return null
+  if (!loc)
+    return null
 
   // String format: "33.498991, -117.157243"
   if (typeof loc === 'string') {
@@ -50,7 +51,8 @@ function extractLocation(loc: any): { lat: number, lng: number } | null {
     if (parts.length >= 2) {
       const lat = Number(parts[0])
       const lng = Number(parts[1])
-      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && (lat !== 0 || lng !== 0))
+        return { lat, lng }
     }
     return null
   }
@@ -59,7 +61,8 @@ function extractLocation(loc: any): { lat: number, lng: number } | null {
   if (loc.type === 'Point' && Array.isArray(loc.coordinates)) {
     const lng = Number(loc.coordinates[0]?.$numberDouble ?? loc.coordinates[0])
     const lat = Number(loc.coordinates[1]?.$numberDouble ?? loc.coordinates[1])
-    if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+    if (!Number.isNaN(lat) && !Number.isNaN(lng) && (lat !== 0 || lng !== 0))
+      return { lat, lng }
     return null
   }
 
@@ -69,7 +72,8 @@ function extractLocation(loc: any): { lat: number, lng: number } | null {
   if (rawLat !== undefined && rawLng !== undefined) {
     const lat = Number(rawLat?.$numberDouble ?? rawLat?.valueOf?.() ?? rawLat)
     const lng = Number(rawLng?.$numberDouble ?? rawLng?.valueOf?.() ?? rawLng)
-    if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+    if (!Number.isNaN(lat) && !Number.isNaN(lng) && (lat !== 0 || lng !== 0))
+      return { lat, lng }
     return null
   }
 
@@ -77,7 +81,8 @@ function extractLocation(loc: any): { lat: number, lng: number } | null {
   if (Array.isArray(loc) && loc.length >= 2) {
     const lat = Number(loc[0]?.$numberDouble ?? loc[0])
     const lng = Number(loc[1]?.$numberDouble ?? loc[1])
-    if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
+    if (!Number.isNaN(lat) && !Number.isNaN(lng) && (lat !== 0 || lng !== 0))
+      return { lat, lng }
     return null
   }
 
@@ -169,10 +174,12 @@ export default defineEventHandler(async () => {
 
     // Helper: resolve employee
     function resolveEmployee(raw: any): { firebaseId: string, name: string, avatar: string } | null {
-      if (!raw) return null
+      if (!raw)
+        return null
       const str = raw.toString().trim()
       let info = empByLegacyId.get(str)
-      if (!info) info = empByName.get(str.toLowerCase())
+      if (!info)
+        info = empByName.get(str.toLowerCase())
       return info || null
     }
 
@@ -190,7 +197,8 @@ export default defineEventHandler(async () => {
       const scheduleFromDate = schedule.fromDate ? sanitizeForFirestore(schedule.fromDate) : null
 
       for (const entry of timesheetArray) {
-        if (!entry || !entry._id) continue
+        if (!entry || !entry._id)
+          continue
         totalEntries++
         const entryLegacyId = entry._id.toString()
 
