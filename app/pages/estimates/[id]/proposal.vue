@@ -17,12 +17,12 @@ const {
   lastSaved,
   hasUnsavedChanges,
   savedBlocks,
-  isLoadingBlocks,
+  isLoadingBlocks: _isLoadingBlocks,
   showSaveBlockModal,
   blockTitle,
   blockDescription,
   blockCategory,
-  blockContentToSave,
+  blockContentToSave: _blockContentToSave,
   loadProposal,
   saveProposal,
   onContentUpdate,
@@ -100,7 +100,7 @@ async function exportPDF() {
     const letterheadEl = document.getElementById('proposal-letterhead')
     const editorEl = document.querySelector('.proposal-editor-content')
 
-    const letterheadHTML = letterheadEl?.innerHTML || ''
+    const _letterheadHTML = letterheadEl?.innerHTML || ''
     const editorHTML = editorEl?.innerHTML || proposalContent.value
 
     printWindow.document.write(`

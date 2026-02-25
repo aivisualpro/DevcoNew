@@ -149,7 +149,7 @@ export function useProposalEditor(estimateId: Ref<string>) {
       toast.success('Block deleted')
       savedBlocks.value = savedBlocks.value.filter(b => b._id !== blockId)
     }
-    catch (_err: any) {
+    catch {
       toast.error('Failed to delete block')
     }
   }

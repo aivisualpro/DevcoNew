@@ -28,7 +28,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [content: string]
-  'save-block': [html: string]
+  'saveBlock': [html: string]
 }>()
 
 // ─── Slash Command State ───
@@ -54,15 +54,18 @@ const lineSpacings = [
 ]
 const currentLineSpacing = ref('1.5')
 
+// Forward-declare for handleKeyDown which runs after editor is created
+let editorRef: ReturnType<typeof useEditor> | null = null
+
 function setFontSize(size: string) {
-  if (!editor.value)
+  if (!editorRef?.value)
     return
-  editor.value.chain().focus().setFontSize(`${size}px`).run()
+  editorRef.value.chain().focus().setFontSize(`${size}px`).run()
   showFontSizeMenu.value = false
 }
 
 function decreaseFontSize() {
-  if (!editor.value)
+  if (!editorRef?.value)
     return
   const current = getCurrentFontSize()
   const idx = fontSizes.indexOf(current)
@@ -73,7 +76,7 @@ function decreaseFontSize() {
 }
 
 function increaseFontSize() {
-  if (!editor.value)
+  if (!editorRef?.value)
     return
   const current = getCurrentFontSize()
   const idx = fontSizes.indexOf(current)
@@ -84,16 +87,16 @@ function increaseFontSize() {
 }
 
 function getCurrentFontSize(): string {
-  if (!editor.value)
+  if (!editorRef?.value)
     return '14'
-  const attrs = editor.value.getAttributes('textStyle')
+  const attrs = editorRef.value.getAttributes('textStyle')
   if (attrs.fontSize)
     return attrs.fontSize.replace('px', '')
   return '14'
 }
 
 function setLineSpacing(value: string) {
-  if (!editor.value)
+  if (!editorRef?.value)
     return
   currentLineSpacing.value = value
   // Apply via CSS to the editor content
@@ -174,7 +177,7 @@ const editor = useEditor({
     attributes: {
       class: 'proposal-editor-content',
     },
-    handleKeyDown(view, event) {
+    handleKeyDown(_view, event) {
       // Handle slash menu keyboard navigation
       if (showSlashMenu.value) {
         if (event.key === 'ArrowDown') {
@@ -209,13 +212,13 @@ const editor = useEditor({
       return false
     },
   },
-  onUpdate({ editor }) {
-    const html = editor.getHTML()
+  onUpdate({ editor: ed }) {
+    const html = ed.getHTML()
     emit('update:modelValue', html)
 
     // Check for slash command trigger
-    const { from } = editor.state.selection
-    const textBefore = editor.state.doc.textBetween(
+    const { from } = ed.state.selection
+    const textBefore = ed.state.doc.textBetween(
       Math.max(0, from - 20),
       from,
       '\n',
@@ -227,8 +230,8 @@ const editor = useEditor({
       slashSelectedIndex.value = 0
 
       // Get cursor coordinates
-      const coords = editor.view.coordsAtPos(from)
-      const editorRect = editor.view.dom.closest('.proposal-canvas')?.getBoundingClientRect()
+      const coords = ed.view.coordsAtPos(from)
+      const editorRect = ed.view.dom.closest('.proposal-canvas')?.getBoundingClientRect()
       if (editorRect) {
         slashMenuPos.value = {
           top: coords.bottom - editorRect.top + 8,
@@ -242,6 +245,9 @@ const editor = useEditor({
     }
   },
 })
+
+// Link editorRef so forward-declared helpers work
+editorRef = editor
 
 watch(() => props.modelValue, (val) => {
   if (editor.value && val !== editor.value.getHTML()) {
@@ -288,12 +294,12 @@ function executeSlashCommand(cmdId: string) {
       const { from: sf, to: st } = editor.value.state.selection
       if (sf === st) {
         // No selection - save entire content
-        emit('save-block', editor.value.getHTML())
+        emit('saveBlock', editor.value.getHTML())
       }
       else {
         // Save selected content as text
         const selectedText = editor.value.state.doc.textBetween(sf, st, '\n')
-        emit('save-block', selectedText)
+        emit('saveBlock', selectedText)
       }
       break
     }
@@ -343,6 +349,7 @@ function setLink() {
   if (!editor.value)
     return
   const previousUrl = editor.value.getAttributes('link').href
+  // eslint-disable-next-line no-alert
   const url = window.prompt('Enter URL:', previousUrl)
   if (url === null)
     return
@@ -356,6 +363,7 @@ function setLink() {
 function insertImage() {
   if (!editor.value)
     return
+  // eslint-disable-next-line no-alert
   const url = window.prompt('Enter image URL:')
   if (url) {
     editor.value.chain().focus().setImage({ src: url }).run()
@@ -707,7 +715,7 @@ onUnmounted(() => {
           <Icon name="i-lucide-a-arrow-up" class="size-3.5" />
         </button>
         <div class="w-px h-4 bg-border mx-0.5" />
-        <button class="bubble-btn text-amber-500 hover:text-amber-600" title="Save as Reusable Block" @click="() => { if (!editor) return; const { from: sf, to: st } = editor.state.selection; if (sf !== st) { const text = editor.state.doc.textBetween(sf, st, '\n'); emit('save-block', text); } }">
+        <button class="bubble-btn text-amber-500 hover:text-amber-600" title="Save as Reusable Block" @click="() => { if (!editor) return; const { from: sf, to: st } = editor.state.selection; if (sf !== st) { const text = editor.state.doc.textBetween(sf, st, '\n'); emit('saveBlock', text); } }">
           <Icon name="i-lucide-bookmark-plus" class="size-3.5" />
         </button>
       </div>
@@ -729,7 +737,7 @@ onUnmounted(() => {
               {{ category }}
             </div>
             <button
-              v-for="(cmd, idx) in commands"
+              v-for="cmd in commands"
               :key="cmd.id"
               class="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors"
               :class="[filteredSlashCommands.indexOf(cmd) === slashSelectedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50']"
