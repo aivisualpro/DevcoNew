@@ -53,9 +53,11 @@ function getCount(id: string): number {
     >
       <Icon :name="item.icon" class="size-4 shrink-0" :class="currentActiveId === item.id ? item.color : 'text-muted-foreground'" />
       <span class="flex-1 text-left">{{ item.title }}</span>
-      <Badge v-if="isFetched" variant="secondary" class="h-5 min-w-5 justify-center px-1.5 text-[10px] font-bold tabular-nums">
-        {{ getCount(item.id) }}
-      </Badge>
+      <ClientOnly>
+        <Badge v-if="isFetched" variant="secondary" class="h-5 min-w-5 justify-center px-1.5 text-[10px] font-bold tabular-nums">
+          {{ getCount(item.id) }}
+        </Badge>
+      </ClientOnly>
     </NuxtLink>
 
     <!-- Separator -->

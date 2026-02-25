@@ -12,8 +12,8 @@ const {
   deleteUser,
 } = usePeopleApi()
 
-// Eagerly fetch (uses global cache — instant if already loaded)
-fetchAllUsers()
+// Eagerly fetch on client only (uses global cache — instant if already loaded)
+onMounted(() => fetchAllUsers())
 
 // Find user from store
 const user = computed(() => allUsers.value.find(u => u.id === userId.value || u._id === userId.value))

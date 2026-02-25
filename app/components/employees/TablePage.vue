@@ -30,8 +30,8 @@ const {
   createUser,
 } = usePeopleApi()
 
-// Eagerly fetch (uses global cache — instant if already loaded)
-fetchAllUsers()
+// Eagerly fetch on client only (uses global cache — instant if already loaded)
+onMounted(() => fetchAllUsers())
 
 // ─── UI State ───
 const search = ref('')
@@ -311,102 +311,115 @@ async function handleCreateEmployee() {
     </div>
 
     <!-- Table (scrollable with infinite scroll) -->
-    <div v-if="!fetchError" ref="scrollContainerRef" class="flex-1 min-h-0 overflow-auto" @scroll="handleScroll">
-      <Table>
-        <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
-          <TableRow>
-            <TableHead
-              v-for="col in columns"
-              :key="col.key"
-              class="text-[10px] h-8 select-none cursor-pointer hover:bg-muted/80 transition-colors group/th"
-              @click="toggleSort(col.key)"
+    <ClientOnly>
+      <div v-if="!fetchError" ref="scrollContainerRef" class="flex-1 min-h-0 overflow-auto" @scroll="handleScroll">
+        <Table>
+          <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
+            <TableRow>
+              <TableHead
+                v-for="col in columns"
+                :key="col.key"
+                class="text-[10px] h-8 select-none cursor-pointer hover:bg-muted/80 transition-colors group/th"
+                @click="toggleSort(col.key)"
+              >
+                <div class="flex items-center gap-1">
+                  <span>{{ col.label }}</span>
+                  <Icon
+                    :name="getSortIcon(col.key)"
+                    class="size-3 shrink-0 transition-opacity"
+                    :class="sortKey === col.key && sortDir ? 'text-primary opacity-100' : 'opacity-0 group-hover/th:opacity-40'"
+                  />
+                </div>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow
+              v-for="item in visibleItems"
+              :key="item.id || item._id"
+              class="group cursor-pointer hover:bg-muted/50"
+              @click="navigateTo(`/employees/detail/${item.id || item._id}`)"
             >
-              <div class="flex items-center gap-1">
-                <span>{{ col.label }}</span>
-                <Icon
-                  :name="getSortIcon(col.key)"
-                  class="size-3 shrink-0 transition-opacity"
-                  :class="sortKey === col.key && sortDir ? 'text-primary opacity-100' : 'opacity-0 group-hover/th:opacity-40'"
-                />
-              </div>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow
-            v-for="item in visibleItems"
-            :key="item.id || item._id"
-            class="group cursor-pointer hover:bg-muted/50"
-            @click="navigateTo(`/employees/detail/${item.id || item._id}`)"
-          >
-            <TableCell v-for="col in columns" :key="col.key">
-              <!-- Avatar -->
-              <div v-if="col.type === 'avatar'" class="flex items-center gap-3">
-                <Avatar class="size-8 border">
-                  <AvatarImage :src="item.profilePicture || item.image" :alt="item[col.key]" />
-                  <AvatarFallback class="text-xs">
-                    {{ getInitials(item[col.key]) }}
-                  </AvatarFallback>
-                </Avatar>
-                <span class="font-medium text-[10px]">{{ item[col.key] || '—' }}</span>
-              </div>
-              <!-- Badge -->
-              <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">
-                {{ item[col.key] || '—' }}
-              </Badge>
-              <!-- Date -->
-              <span v-else-if="col.type === 'date'" class="text-muted-foreground text-[10px]">
-                {{ formatDate(item[col.key]) }}
-              </span>
-              <!-- Tags -->
-              <div v-else-if="col.type === 'tags'" class="flex flex-wrap gap-1">
-                <Badge v-for="tag in (item[col.key] || [])" :key="tag" variant="secondary" class="text-xs font-normal">
-                  {{ tag }}
+              <TableCell v-for="col in columns" :key="col.key">
+                <!-- Avatar -->
+                <div v-if="col.type === 'avatar'" class="flex items-center gap-3">
+                  <Avatar class="size-8 border">
+                    <AvatarImage :src="item.profilePicture || item.image" :alt="item[col.key]" />
+                    <AvatarFallback class="text-xs">
+                      {{ getInitials(item[col.key]) }}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span class="font-medium text-[10px]">{{ item[col.key] || '—' }}</span>
+                </div>
+                <!-- Badge -->
+                <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">
+                  {{ item[col.key] || '—' }}
                 </Badge>
-              </div>
-              <!-- Default text -->
-              <span v-else class="text-[10px]">{{ item[col.key] ?? '—' }}</span>
-            </TableCell>
-          </TableRow>
-          <!-- Loading rows -->
-          <TableRow v-if="!isFetched && !fetchError">
-            <TableCell :colspan="columns.length" class="h-32 text-center">
-              <div class="flex flex-col items-center gap-2 text-muted-foreground">
-                <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-                <p class="text-sm">
-                  Loading employees...
-                </p>
-              </div>
-            </TableCell>
-          </TableRow>
-          <TableRow v-else-if="visibleItems.length === 0">
-            <TableCell :colspan="columns.length" class="h-32 text-center">
-              <div class="flex flex-col items-center gap-2 text-muted-foreground">
-                <Icon name="i-lucide-inbox" class="size-8" />
-                <p>No records found</p>
-              </div>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+                <!-- Date -->
+                <span v-else-if="col.type === 'date'" class="text-muted-foreground text-[10px]">
+                  {{ formatDate(item[col.key]) }}
+                </span>
+                <!-- Tags -->
+                <div v-else-if="col.type === 'tags'" class="flex flex-wrap gap-1">
+                  <Badge v-for="tag in (item[col.key] || [])" :key="tag" variant="secondary" class="text-xs font-normal">
+                    {{ tag }}
+                  </Badge>
+                </div>
+                <!-- Default text -->
+                <span v-else class="text-[10px]">{{ item[col.key] ?? '—' }}</span>
+              </TableCell>
+            </TableRow>
+            <!-- Loading rows -->
+            <TableRow v-if="!isFetched && !fetchError">
+              <TableCell :colspan="columns.length" class="h-32 text-center">
+                <div class="flex flex-col items-center gap-2 text-muted-foreground">
+                  <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
+                  <p class="text-sm">
+                    Loading employees...
+                  </p>
+                </div>
+              </TableCell>
+            </TableRow>
+            <TableRow v-else-if="visibleItems.length === 0">
+              <TableCell :colspan="columns.length" class="h-32 text-center">
+                <div class="flex flex-col items-center gap-2 text-muted-foreground">
+                  <Icon name="i-lucide-inbox" class="size-8" />
+                  <p>No records found</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
 
-      <!-- Loading more indicator -->
-      <div v-if="hasMore" class="flex items-center justify-center py-4 text-muted-foreground">
-        <Icon name="i-lucide-loader-2" class="size-4 animate-spin mr-2" />
-        <span class="text-xs">Scroll for more...</span>
+        <!-- Loading more indicator -->
+        <div v-if="hasMore" class="flex items-center justify-center py-4 text-muted-foreground">
+          <Icon name="i-lucide-loader-2" class="size-4 animate-spin mr-2" />
+          <span class="text-xs">Scroll for more...</span>
+        </div>
       </div>
-    </div>
+
+      <template #fallback>
+        <div class="flex-1 flex items-center justify-center">
+          <div class="flex flex-col items-center gap-2 text-muted-foreground">
+            <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
+            <p class="text-sm">Loading employees...</p>
+          </div>
+        </div>
+      </template>
+    </ClientOnly>
 
     <!-- Footer status bar -->
-    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between gap-2">
-      <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ visibleItems.length }} of {{ totalFiltered }} records
-      </p>
-      <p v-if="sortKey && sortDir" class="text-xs text-muted-foreground flex items-center gap-1">
-        <Icon :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3" />
-        Sorted by {{ columns.find(c => c.key === sortKey)?.label || sortKey }}
-      </p>
-    </div>
+    <ClientOnly>
+      <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between gap-2">
+        <p class="text-xs text-muted-foreground tabular-nums">
+          Showing {{ visibleItems.length }} of {{ totalFiltered }} records
+        </p>
+        <p v-if="sortKey && sortDir" class="text-xs text-muted-foreground flex items-center gap-1">
+          <Icon :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'" class="size-3" />
+          Sorted by {{ columns.find(c => c.key === sortKey)?.label || sortKey }}
+        </p>
+      </div>
+    </ClientOnly>
   </div>
 
   <!-- ─── Add Employee Dialog ─── -->
