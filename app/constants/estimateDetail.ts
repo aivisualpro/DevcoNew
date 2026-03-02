@@ -24,6 +24,12 @@ export const estimateDetailTabs = [
     color: 'text-violet-500',
   },
   {
+    id: 'time-cards',
+    label: 'Time Cards',
+    icon: 'i-lucide-clock',
+    color: 'text-orange-500',
+  },
+  {
     id: 'job-docs',
     label: 'Job Docs',
     icon: 'i-lucide-folder-open',

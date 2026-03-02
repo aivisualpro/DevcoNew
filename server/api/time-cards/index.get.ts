@@ -14,6 +14,7 @@ export default defineEventHandler(async () => {
       .collection('devcoTimeCards')
       .select(
         'employeeName',
+        'employeeAvatar',
         'type',
         'clockIn',
         'clockOut',
@@ -24,12 +25,15 @@ export default defineEventHandler(async () => {
         'distance',
         'hours',
         'scheduleDate',
+        'scheduleId',
+        'legacy_scheduleId',
         'createdAt',
         'locationIn',
         'locationOut',
         'dumpQty',
         'shopQty',
         'dumpWashout',
+        'comments',
       )
       .get()
 

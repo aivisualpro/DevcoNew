@@ -87,9 +87,23 @@ const activeSubTab = ref('jha')
         embedded
       />
 
+      <!-- Pothole Logs -->
+      <JobDocsPotholeLogsTable
+        v-if="activeSubTab === 'pothole-logs'"
+        :estimate-number="estimateNumber"
+        embedded
+      />
+
+      <!-- Pre-Bore Logs -->
+      <JobDocsPreBoreLogsTable
+        v-if="activeSubTab === 'pre-bore-logs'"
+        :estimate-number="estimateNumber"
+        embedded
+      />
+
       <!-- Placeholder tabs -->
       <div
-        v-if="['pothole-logs', 'pre-bore-logs', 'prelims', 'releases', 'certified-payroll', 'planning', 'signed-contracts'].includes(activeSubTab)"
+        v-if="['prelims', 'releases', 'certified-payroll', 'planning', 'signed-contracts'].includes(activeSubTab)"
         class="flex flex-col items-center justify-center h-full text-muted-foreground"
       >
         <div
