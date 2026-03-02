@@ -30,5 +30,11 @@ export default defineNuxtPlugin(() => {
             const { fetchAllPreBore } = usePreBoreApi()
             fetchAllPreBore()
         }
+
+        // Prefetch pothole logs data when navigating to pothole logs
+        if (path.startsWith('/job-docs/pothole-logs')) {
+            const { fetchAllPotholeLogs } = usePotholeLogsApi()
+            fetchAllPotholeLogs()
+        }
     })
 })
