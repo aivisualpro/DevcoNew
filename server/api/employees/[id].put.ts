@@ -1,3 +1,5 @@
+import { invalidateEmployeesCache } from './index.get'
+
 /**
  * PUT /api/employees/[id]
  * Updates an employee in Firestore devcoEmployees.
@@ -29,6 +31,7 @@ export default defineEventHandler(async (event) => {
     delete updates.createdAt
 
     await docRef.update(updates)
+    invalidateEmployeesCache()
 
     return {
       success: true,

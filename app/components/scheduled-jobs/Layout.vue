@@ -1,4 +1,8 @@
 <script setup lang="ts">
+// Prefetch schedule data at the layout level — this fires BEFORE any day page mounts.
+// Because data is global-cached, by the time [day].vue mounts, data is already available.
+const { fetchAllSchedules } = useScheduledJobsApi()
+fetchAllSchedules()
 </script>
 
 <template>

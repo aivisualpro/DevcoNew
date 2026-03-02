@@ -33,6 +33,9 @@ const _isFetched = ref(false)
 const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
 
+// ─── Request deduplication: share a single inflight promise ───
+let _inflightFetch: Promise<void> | null = null
+
 // ─── Sync state ───
 const _isSyncing = ref(false)
 const _syncResult = ref<{
@@ -46,38 +49,58 @@ export function usePeopleApi() {
   async function fetchAllUsers(force = false) {
     if (_isFetched.value && !force)
       return
-    if (_isFetching.value && !force)
-      return
+    // If a fetch is already in flight, await that same promise instead of firing a new one
+    if (_isFetching.value && _inflightFetch && !force)
+      return _inflightFetch
 
     _isFetching.value = true
     _fetchError.value = null
 
-    try {
-      const response = await $fetch<any>('/api/employees', {
-        method: 'GET',
-      })
+    const doFetch = async () => {
+      try {
+        // Add force query param to bust server cache when force=true
+        const url = force ? '/api/employees?force=1' : '/api/employees'
 
-      // Extract users array from response
-      const usersArray = Array.isArray(response)
-        ? response
-        : response?.users || response?.data || []
+        // Use AbortController for a 15s timeout to prevent infinite hanging
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15_000)
 
-      // Normalize: map _id → id
-      _allUsers.value = usersArray.map((item: any) => ({
-        ...item,
-        id: item._id || item.id,
-        fullName: `${item.firstName || ''} ${item.lastName || ''}`.trim(),
-      }))
+        const response = await $fetch<any>(url, {
+          method: 'GET',
+          signal: controller.signal,
+        })
 
-      _isFetched.value = true
+        clearTimeout(timeoutId)
+
+        // Extract users array from response
+        const usersArray = Array.isArray(response)
+          ? response
+          : response?.users || response?.data || []
+
+        // Normalize: map _id → id
+        _allUsers.value = usersArray.map((item: any) => ({
+          ...item,
+          id: item._id || item.id,
+          fullName: `${item.firstName || ''} ${item.lastName || ''}`.trim(),
+        }))
+
+        _isFetched.value = true
+      }
+      catch (err: any) {
+        _fetchError.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Failed to fetch employees'
+        // Don't wipe existing data on refresh failures
+        if (!_allUsers.value.length) {
+          _allUsers.value = []
+        }
+      }
+      finally {
+        _isFetching.value = false
+        _inflightFetch = null
+      }
     }
-    catch (err: any) {
-      _fetchError.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Failed to fetch employees'
-      _allUsers.value = []
-    }
-    finally {
-      _isFetching.value = false
-    }
+
+    _inflightFetch = doFetch()
+    return _inflightFetch
   }
 
   /** Sync employees from MongoDB → Firebase via server API */

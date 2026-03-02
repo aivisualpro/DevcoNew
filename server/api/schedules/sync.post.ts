@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { ObjectId } from 'mongodb'
 import { useMongoClient } from '../../utils/mongodb'
+import { invalidateSchedulesCache } from './index.get'
 
 /**
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
@@ -308,6 +309,8 @@ export default defineEventHandler(async () => {
     }
 
     const duration = Date.now() - startTime
+    invalidateSchedulesCache()
+
     return {
       success: true,
       message: `Synced ${mongoSchedules.length} schedules to Firebase`,

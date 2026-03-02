@@ -252,13 +252,65 @@ async function handleRefresh() {
       </div>
 
       <div class="flex-1 min-h-0 overflow-auto">
-        <!-- Loading -->
-        <div v-if="!isFetched && !fetchError" class="flex items-center justify-center h-64">
-          <div class="flex flex-col items-center gap-3 text-muted-foreground">
-            <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-            <p class="text-sm">
-              Loading schedules...
-            </p>
+        <!-- Skeleton Loading Cards -->
+        <div v-if="!isFetched && !fetchError" class="p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+          <div
+            v-for="i in 6"
+            :key="`skeleton-${i}`"
+            class="relative overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm animate-pulse"
+            :style="{ animationDelay: `${i * 80}ms` }"
+          >
+            <!-- Skeleton top accent bar -->
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-muted-foreground/10 via-muted-foreground/20 to-muted-foreground/10" />
+            <!-- Skeleton header -->
+            <div class="p-4 pb-3 space-y-3">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-16 rounded-full bg-muted-foreground/10" />
+                <div class="h-5 w-12 rounded-full bg-muted-foreground/8" />
+              </div>
+              <div class="h-5 rounded bg-muted-foreground/10" :style="{ width: `${50 + (i * 11) % 40}%` }" />
+              <div class="flex items-center gap-1.5">
+                <div class="size-3.5 rounded bg-muted-foreground/8" />
+                <div class="h-3 rounded bg-muted-foreground/8" :style="{ width: `${30 + (i * 7) % 30}%` }" />
+              </div>
+            </div>
+            <!-- Skeleton time row -->
+            <div class="mx-4 mb-3 grid grid-cols-2 gap-3 rounded-lg bg-muted/40 p-3">
+              <div class="space-y-1.5">
+                <div class="h-2.5 w-10 rounded bg-muted-foreground/8" />
+                <div class="h-4 w-16 rounded bg-muted-foreground/10" />
+              </div>
+              <div class="space-y-1.5">
+                <div class="h-2.5 w-8 rounded bg-muted-foreground/8" />
+                <div class="h-4 w-16 rounded bg-muted-foreground/10" />
+              </div>
+            </div>
+            <!-- Skeleton people -->
+            <div class="mx-4 mb-3 grid grid-cols-2 gap-3">
+              <div class="space-y-2">
+                <div class="h-2.5 w-16 rounded bg-muted-foreground/8" />
+                <div class="flex items-center gap-2">
+                  <div class="size-7 rounded-full bg-muted-foreground/10" />
+                  <div class="space-y-1 flex-1">
+                    <div class="h-3 w-20 rounded bg-muted-foreground/10" />
+                    <div class="h-2 w-8 rounded bg-muted-foreground/8" />
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-2.5 w-12 rounded bg-muted-foreground/8" />
+                <div class="flex -space-x-2">
+                  <div v-for="j in 3" :key="`av-${j}`" class="size-8 rounded-full bg-muted-foreground/10 ring-2 ring-card" />
+                </div>
+              </div>
+            </div>
+            <!-- Skeleton footer -->
+            <div class="border-t px-4 py-2 flex items-center justify-between bg-muted/20">
+              <div class="flex gap-2">
+                <div class="h-5 w-16 rounded-full bg-muted-foreground/8" />
+              </div>
+              <div class="h-5 w-14 rounded bg-muted-foreground/8" />
+            </div>
           </div>
         </div>
 

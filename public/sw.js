@@ -7,12 +7,11 @@ const PRE_CACHE = [
   '/',
   '/login',
   '/manifest.json',
-  '/favicon.svg',
+  '/favicon.png',
   '/icon-192x192.png',
   '/icon-512x512.png',
   '/apple-touch-icon.png',
-  '/mainlogo.png',
-  '/logo.png',
+  '/devco-logo.png',
 ]
 
 // Install – pre-cache shell assets

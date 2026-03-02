@@ -29,6 +29,9 @@ const _isFetched = ref(false)
 const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
 
+// ─── Request deduplication: share a single inflight promise ───
+let _inflightFetch: Promise<void> | null = null
+
 // ─── Sync state ───
 const _isSyncing = ref(false)
 const _syncResult = ref<{
@@ -40,39 +43,59 @@ const _syncResult = ref<{
 export function useScheduledJobsApi() {
   /**
    * Fetch all schedules from Firebase via our server API.
+   * Uses request deduplication so Nav + DayPage don't fire separate requests.
    */
   async function fetchAllSchedules(force = false) {
     if (_isFetched.value && !force)
       return
-    if (_isFetching.value && !force)
-      return
+    // If a fetch is already in flight, await that same promise
+    if (_isFetching.value && _inflightFetch && !force)
+      return _inflightFetch
 
     _isFetching.value = true
     _fetchError.value = null
 
-    try {
-      const response = await $fetch<any>('/api/schedules', {
-        method: 'GET',
-      })
+    const doFetch = async () => {
+      try {
+        const url = force ? '/api/schedules?force=1' : '/api/schedules'
 
-      const schedulesArray = Array.isArray(response)
-        ? response
-        : response?.schedules || response?.data || []
+        // Use AbortController for a 20s timeout to prevent infinite hanging
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 20_000)
 
-      _allSchedules.value = schedulesArray.map((item: any) => ({
-        ...item,
-        id: item._id || item.id,
-      }))
+        const response = await $fetch<any>(url, {
+          method: 'GET',
+          signal: controller.signal,
+        })
 
-      _isFetched.value = true
+        clearTimeout(timeoutId)
+
+        const schedulesArray = Array.isArray(response)
+          ? response
+          : response?.schedules || response?.data || []
+
+        _allSchedules.value = schedulesArray.map((item: any) => ({
+          ...item,
+          id: item._id || item.id,
+        }))
+
+        _isFetched.value = true
+      }
+      catch (err: any) {
+        _fetchError.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Failed to fetch schedules'
+        // Don't wipe data on refresh failures
+        if (!_allSchedules.value.length) {
+          _allSchedules.value = []
+        }
+      }
+      finally {
+        _isFetching.value = false
+        _inflightFetch = null
+      }
     }
-    catch (err: any) {
-      _fetchError.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Failed to fetch schedules'
-      _allSchedules.value = []
-    }
-    finally {
-      _isFetching.value = false
-    }
+
+    _inflightFetch = doFetch()
+    return _inflightFetch
   }
 
   /**
@@ -98,7 +121,7 @@ export function useScheduledJobsApi() {
       _isSyncing.value = false
     }
 
-    // Re-fetch from Firebase
+    // Re-fetch from Firebase (force to bust both server + client cache)
     await fetchAllSchedules(true)
   }
 

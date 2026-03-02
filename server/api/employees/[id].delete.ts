@@ -1,3 +1,5 @@
+import { invalidateEmployeesCache } from './index.get'
+
 /**
  * DELETE /api/employees/[id]
  * Deletes an employee from Firestore devcoEmployees.
@@ -18,6 +20,7 @@ export default defineEventHandler(async (event) => {
     }
 
     await docRef.delete()
+    invalidateEmployeesCache()
 
     return { success: true, message: 'Employee deleted' }
   }

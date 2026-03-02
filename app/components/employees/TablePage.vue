@@ -373,17 +373,19 @@ async function handleCreateEmployee() {
                 <span v-else class="text-[10px]">{{ item[col.key] ?? '—' }}</span>
               </TableCell>
             </TableRow>
-            <!-- Loading rows -->
-            <TableRow v-if="!isFetched && !fetchError">
-              <TableCell :colspan="columns.length" class="h-32 text-center">
-                <div class="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-                  <p class="text-sm">
-                    Loading employees...
-                  </p>
-                </div>
-              </TableCell>
-            </TableRow>
+            <!-- Skeleton loading rows -->
+            <template v-if="!isFetched && !fetchError">
+              <TableRow v-for="i in 12" :key="`skeleton-${i}`" class="animate-pulse">
+                <TableCell v-for="col in columns" :key="`sk-${col.key}-${i}`">
+                  <div v-if="col.type === 'avatar'" class="flex items-center gap-3">
+                    <div class="size-8 rounded-full bg-muted-foreground/10 shrink-0" />
+                    <div class="h-3 rounded-full bg-muted-foreground/10" :style="{ width: `${60 + (i * 7) % 40}px` }" />
+                  </div>
+                  <div v-else-if="col.type === 'badge'" class="h-5 rounded-full bg-muted-foreground/10" :style="{ width: `${50 + (i * 11) % 30}px` }" />
+                  <div v-else class="h-3 rounded bg-muted-foreground/10" :style="{ width: `${40 + (i * 13) % 60}px` }" />
+                </TableCell>
+              </TableRow>
+            </template>
             <TableRow v-else-if="visibleItems.length === 0">
               <TableCell :colspan="columns.length" class="h-32 text-center">
                 <div class="flex flex-col items-center gap-2 text-muted-foreground">
@@ -403,12 +405,16 @@ async function handleCreateEmployee() {
       </div>
 
       <template #fallback>
-        <div class="flex-1 flex items-center justify-center">
-          <div class="flex flex-col items-center gap-2 text-muted-foreground">
-            <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-            <p class="text-sm">
-              Loading employees...
-            </p>
+        <!-- SSR fallback: skeleton table -->
+        <div class="flex-1 flex flex-col p-4 gap-3">
+          <div v-for="i in 8" :key="`fb-${i}`" class="flex items-center gap-4 animate-pulse">
+            <div class="size-8 rounded-full bg-muted-foreground/10 shrink-0" />
+            <div class="flex-1 flex gap-3">
+              <div class="h-3 rounded bg-muted-foreground/10 flex-1" />
+              <div class="h-3 rounded bg-muted-foreground/10 w-24" />
+              <div class="h-3 rounded bg-muted-foreground/10 w-16" />
+              <div class="h-3 rounded bg-muted-foreground/10 w-20" />
+            </div>
           </div>
         </div>
       </template>

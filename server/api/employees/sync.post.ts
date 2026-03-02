@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { ObjectId } from 'mongodb'
 import { useMongoClient } from '../../utils/mongodb'
+import { invalidateEmployeesCache } from './index.get'
 
 /**
  * Deep-convert a MongoDB document into a Firestore-safe plain object.
@@ -172,6 +173,7 @@ export default defineEventHandler(async (_event) => {
     }
 
     const duration = Date.now() - startTime
+    invalidateEmployeesCache()
 
     return {
       success: true,

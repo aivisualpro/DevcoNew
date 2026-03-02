@@ -1,3 +1,5 @@
+import { invalidateEmployeesCache } from './index.get'
+
 /**
  * POST /api/employees/create
  * Creates a new employee in Firestore devcoEmployees.
@@ -62,6 +64,7 @@ export default defineEventHandler(async (event) => {
     }
 
     await docRef.set(payload)
+    invalidateEmployeesCache()
 
     return {
       success: true,

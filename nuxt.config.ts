@@ -23,6 +23,12 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   spaLoadingTemplate: false,
 
+  // Enable response compression for API responses
+  nitro: {
+    compressPublicAssets: true,
+    minify: true,
+  },
+
   app: {
     head: {
       title: 'DEVCO ERP',
