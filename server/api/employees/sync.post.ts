@@ -124,6 +124,32 @@ export default defineEventHandler(async (_event) => {
         // Remove MongoDB _id — we store it as legacy_id instead
         delete sanitized._id
 
+        // ── Size guard: strip oversized string fields to stay under Firestore's 1MB limit ──
+        // Walk all top-level keys and truncate any string value > 100KB
+        const MAX_FIELD_BYTES = 100_000 // 100KB per field
+        for (const key of Object.keys(sanitized)) {
+          const val = sanitized[key]
+          if (typeof val === 'string' && val.length > MAX_FIELD_BYTES) {
+            // Preserve URL strings (just the URL, not base64 data)
+            if (val.startsWith('http://') || val.startsWith('https://')) {
+              // Keep URLs, they're fine
+            }
+            else {
+              sanitized[key] = `[truncated: ${(val.length / 1024).toFixed(0)}KB]`
+            }
+          }
+          // Also handle nested objects/arrays with huge strings
+          if (typeof val === 'object' && val !== null) {
+            const valStr = JSON.stringify(val)
+            if (valStr.length > MAX_FIELD_BYTES * 5) {
+              // This nested object is too large — strip it
+              sanitized[key] = typeof val === 'object' && !Array.isArray(val)
+                ? { _truncated: true, _originalSizeKB: Math.round(valStr.length / 1024) }
+                : []
+            }
+          }
+        }
+
         // Add legacy_id and sync metadata
         sanitized.legacy_id = legacyId
         sanitized._syncedAt = FieldValue.serverTimestamp()

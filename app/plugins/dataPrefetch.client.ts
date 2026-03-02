@@ -24,5 +24,11 @@ export default defineNuxtPlugin(() => {
             const { fetchAllUsers } = usePeopleApi()
             fetchAllUsers()
         }
+
+        // Prefetch pre-bore data when navigating to pre-bore logs
+        if (path.startsWith('/job-docs/pre-bore-logs')) {
+            const { fetchAllPreBore } = usePreBoreApi()
+            fetchAllPreBore()
+        }
     })
 })
